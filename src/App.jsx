@@ -309,6 +309,8 @@ function Dashboard({subjects,assignments,exams,grades,profile,onNav}) {
 // ── Attendance ─────────────────────────────────────────────────────────────────
 function Attendance({subjects,setSubjects,userId}) {
   const [showAdd,setShowAdd]=useState(false);
+  const [showSet,setShowSet]=useState(null);
+  const [setVal,setSetVal]=useState({attended:"",total:""});
   const [newS,setNewS]=useState({name:"",code:""});
 
   async function markClass(sub,type) {
@@ -325,6 +327,15 @@ function Attendance({subjects,setSubjects,userId}) {
   async function deleteSubject(id) {
     await supabase.from("subjects").delete().eq("id",id);
     setSubjects(prev=>prev.filter(s=>s.id!==id));
+  }
+  async function setCount(sub) {
+    const a=parseInt(setVal.attended)||0;
+    const t=parseInt(setVal.total)||sub.total;
+    if(a>t){alert("Attended cannot be more than total");return;}
+    const updates={attended:a,total:t};
+    await supabase.from("subjects").update(updates).eq("id",sub.id);
+    setSubjects(prev=>prev.map(s=>s.id===sub.id?{...s,...updates}:s));
+    setShowSet(null);setSetVal({attended:"",total:""});
   }
 
   return (
@@ -349,14 +360,25 @@ function Attendance({subjects,setSubjects,userId}) {
               <Ring p={p} size={72} color={sub.color}/>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:14,fontWeight:600,marginBottom:2,paddingRight:24}}>{sub.name}</div>
-                <div style={{fontSize:11,color:C.muted,fontFamily:M,marginBottom:8}}>{sub.code}</div>
-                <div style={{fontSize:12,color:C.muted,marginBottom:6}}>{sub.attended}/{sub.total} classes</div>
-                {p<75&&sub.total>0?<div style={{fontSize:11,color:C.danger}}>Need {needed} more to reach 75%</div>
-                  :sub.total>0?<div style={{fontSize:11,color:C.accentText}}>Can miss {canMiss} more class{canMiss!==1?"es":""}</div>:null}
-                <div style={{display:"flex",gap:8,marginTop:10}}>
-                  <button onClick={()=>markClass(sub,"present")} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accent,fontSize:12,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontFamily:F,fontWeight:600}}>✓ Present</button>
-                  <button onClick={()=>markClass(sub,"absent")} style={{background:C.dangerDim,border:`1px solid ${C.danger}44`,color:C.danger,fontSize:12,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontFamily:F,fontWeight:600}}>✗ Absent</button>
-                </div>
+                <div style={{fontSize:11,color:C.muted,fontFamily:M,marginBottom:6}}>{sub.code}</div>
+                <div style={{fontSize:12,color:C.muted,marginBottom:4}}>{sub.attended}/{sub.total} classes</div>
+                {p<75&&sub.total>0?<div style={{fontSize:11,color:C.danger,marginBottom:8}}>Need {needed} more to reach 75%</div>
+                  :sub.total>0?<div style={{fontSize:11,color:C.accentText,marginBottom:8}}>Can miss {canMiss} more class{canMiss!==1?"es":""}</div>:<div style={{marginBottom:8}}/>}
+                {showSet===sub.id?(
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                    <Input placeholder="Attended" value={setVal.attended} onChange={e=>setSetVal(p=>({...p,attended:e.target.value}))} type="number" style={{width:90}}/>
+                    <span style={{color:C.muted,fontSize:13}}>out of</span>
+                    <Input placeholder="Total" value={setVal.total} onChange={e=>setSetVal(p=>({...p,total:e.target.value}))} type="number" style={{width:90}}/>
+                    <Btn onClick={()=>setCount(sub)} style={{padding:"6px 12px"}}>Save</Btn>
+                    <Btn onClick={()=>setShowSet(null)} variant="ghost" style={{padding:"6px 10px"}}>✕</Btn>
+                  </div>
+                ):(
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button onClick={()=>markClass(sub,"present")} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accent,fontSize:12,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontFamily:F,fontWeight:600}}>✓ Present</button>
+                    <button onClick={()=>markClass(sub,"absent")} style={{background:C.dangerDim,border:`1px solid ${C.danger}44`,color:C.danger,fontSize:12,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontFamily:F,fontWeight:600}}>✗ Absent</button>
+                    <button onClick={()=>{setShowSet(sub.id);setSetVal({attended:sub.attended,total:sub.total});}} style={{background:C.blueDim,border:`1px solid ${C.blue}44`,color:C.blue,fontSize:12,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontFamily:F,fontWeight:600}}>✎ Set Count</button>
+                  </div>
+                )}
               </div>
             </Card>;
           })}
