@@ -953,7 +953,7 @@ INSTRUCTIONS:
         <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>AI Assistant ✦</h2>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
           <div style={{width:7,height:7,borderRadius:"50%",background:C.accent,animation:"pulse 2s infinite"}}/>
-          <span style={{fontSize:11,color:C.accentText}}>Gemini Pro</span>
+          <span style={{fontSize:11,color:C.accentText}}>Groq AI</span>
         </div>
       </div>
 
@@ -1127,7 +1127,7 @@ function Profile({profile,setProfile,userId,onLogout}) {
               </div>
             ))}
             <div style={{marginTop:24,paddingTop:20,borderTop:`1px solid ${C.border}`}}>
-              <div style={{fontSize:12,color:C.muted,marginBottom:12}}>AI powered by Gemini Pro · Data stored on Supabase</div>
+              <div style={{fontSize:12,color:C.muted,marginBottom:12}}>AI powered by Groq  · Data stored on Supabase</div>
               <Btn onClick={onLogout} variant="danger" style={{width:"100%",padding:"10px 0",fontSize:13}}>Log Out</Btn>
             </div>
           </div>
