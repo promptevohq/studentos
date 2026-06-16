@@ -871,143 +871,231 @@ function Performance({scores,setScores,userId,profile}) {
   );
 }
 
-// ── AI Assistant ───────────────────────────────────────────────────────────────
-function AIChat({subjects,assignments,exams,scores,profile,attLogs}) {
-  const [messages,setMessages]=useState([
-    {role:"ai",text:`Hi ${profile?.name?.split(" ")[0]||"there"}! 👋 I'm your academic AI assistant. I know your subjects, attendance, scores, and exams. Ask me anything — study help, exam tips, performance analysis, or BHMS-specific questions.`}
-  ]);
+function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
+  const [conversations,setConversations]=useState([]);
+  const [activeConv,setActiveConv]=useState(null);
+  const [messages,setMessages]=useState([]);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
+  const [showSidebar,setShowSidebar]=useState(true);
+  const [editingTitle,setEditingTitle]=useState(null);
+  const [newTitle,setNewTitle]=useState("");
+  const [showArchived,setShowArchived]=useState(false);
   const bottomRef=useRef(null);
 
+  useEffect(()=>{loadConversations();},[]);
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
+
+  async function loadConversations() {
+    const {data}=await supabase.from("ai_conversations").select("*").eq("user_id",userId).order("updated_at",{ascending:false});
+    setConversations(data||[]);
+  }
+
+  async function loadMessages(convId) {
+    const {data}=await supabase.from("ai_messages").select("*").eq("conversation_id",convId).order("created_at",{ascending:true});
+    setMessages(data||[]);
+  }
+
+  async function newChat() {
+    const {data,error}=await supabase.from("ai_conversations").insert({user_id:userId,title:"New Chat"}).select().single();
+    if(!error){
+      setConversations(prev=>[data,...prev]);
+      setActiveConv(data);
+      setMessages([]);
+    }
+  }
+
+  async function selectConv(conv) {
+    setActiveConv(conv);
+    await loadMessages(conv.id);
+  }
+
+  async function deleteConv(id) {
+    await supabase.from("ai_conversations").delete().eq("id",id);
+    setConversations(prev=>prev.filter(c=>c.id!==id));
+    if(activeConv?.id===id){setActiveConv(null);setMessages([]);}
+  }
+
+  async function archiveConv(id) {
+    const conv=conversations.find(c=>c.id===id);
+    await supabase.from("ai_conversations").update({archived:!conv.archived}).eq("id",id);
+    setConversations(prev=>prev.map(c=>c.id===id?{...c,archived:!c.archived}:c));
+  }
+
+  async function renameConv(id,title) {
+    await supabase.from("ai_conversations").update({title}).eq("id",id);
+    setConversations(prev=>prev.map(c=>c.id===id?{...c,title}:c));
+    setEditingTitle(null);
+  }
+
+  async function autoName(convId,firstMessage) {
+    const title=firstMessage.slice(0,40)+(firstMessage.length>40?"...":"");
+    await renameConv(convId,title);
+  }
 
   function buildContext() {
     const avgAtt=subjects.length?Math.round(subjects.reduce((s,sub)=>s+att(sub.attended||0,sub.total||0),0)/subjects.length):0;
     const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75).map(s=>s.name);
     const pending=assignments.filter(a=>a.status!=="submitted").length;
     const upcoming=exams.filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,3);
-    const passedScores=scores.filter(s=>{
-      const tPct=s.theory_max>0?(s.theory_marks/s.theory_max)*100:100;
-      const pPct=s.practical_max>0?(s.practical_marks/s.practical_max)*100:100;
-      return tPct>=(s.theory_pass_pct||50)&&pPct>=(s.practical_pass_pct||50);
-    });
-
-    return `You are an academic AI assistant embedded in StudentOS, an app for medical students.
-
-STUDENT PROFILE:
-- Name: ${profile?.name||"Student"}
-- Program: ${profile?.program||"BHMS"} (Homoeopathic Medical Science)
-- College: ${profile?.college||"Not specified"}
-- Semester: ${profile?.semester||"Not specified"}
-
-ACADEMIC DATA:
-- Average attendance: ${avgAtt}% ${avgAtt<75?"(BELOW 75% threshold — critical!)":"(Good)"}
-- Subjects with low attendance (<75%): ${lowAtt.length>0?lowAtt.join(", "):"None"}
-- Total subjects: ${subjects.length}
-- Pending assignments: ${pending}
-- Scores recorded: ${scores.length} | Passed: ${passedScores.length} | Failed: ${scores.length-passedScores.length}
-- Upcoming exams: ${upcoming.map(e=>`${e.subject} on ${e.date} (${daysLeft(e.date)} days)`).join(", ")||"None"}
-
-BHMS CONTEXT:
-- Passing criteria (CCH standard): Theory 50% of max (150 marks → 75 to pass), Practical/Oral 50% of max (100 marks → 50 to pass), Internal 50% of max
-- Key BHMS subjects: Organon of Medicine, Materia Medica, Anatomy, Physiology, Pathology, Practice of Medicine, Obstetrics & Gynecology, Surgery, Community Medicine, Pharmacy
-- Answer study questions with BHMS curriculum in mind
-
-INSTRUCTIONS:
-- Be helpful, concise, and motivating
-- Use the student's actual data to personalize responses
-- For study questions, provide clear structured answers relevant to BHMS curriculum
-- If asked about attendance/performance, reference their actual numbers
-- Keep responses mobile-friendly (not too long)
-- Respond in plain text, avoid excessive markdown`;
+    return `You are an academic AI assistant for a BHMS (Homoeopathic Medical Science) student.
+Student: ${profile?.name||"Student"}, Program: ${profile?.program||"BHMS"}, Semester: ${profile?.semester||""}
+Average attendance: ${avgAtt}% ${avgAtt<75?"(BELOW 75% - critical!)":""}
+Low attendance subjects: ${lowAtt.join(", ")||"None"}
+Pending assignments: ${pending}
+Upcoming exams: ${upcoming.map(e=>`${e.subject} in ${daysLeft(e.date)} days`).join(", ")||"None"}
+BHMS subjects include: Organon, Materia Medica, Anatomy, Physiology, Pathology, Practice of Medicine.
+Be helpful, concise, and personalized. Remember the conversation history.`;
   }
 
   async function send() {
     if(!input.trim()||loading) return;
-    const userMsg=input.trim();
+    if(!activeConv){await newChat();return;}
+    
+    const userText=input.trim();
     setInput("");
-    setMessages(prev=>[...prev,{role:"user",text:userMsg}]);
+    
+    const userMsg={role:"user",content:userText,conversation_id:activeConv.id,user_id:userId};
+    const {data:savedUser}=await supabase.from("ai_messages").insert(userMsg).select().single();
+    setMessages(prev=>[...prev,savedUser]);
+
+    // Auto-name if first message
+    if(messages.length===0&&activeConv.title==="New Chat"){
+      autoName(activeConv.id,userText);
+    }
+
     setLoading(true);
+
+    // Build history for context
+    const history=messages.map(m=>({
+      role:m.role==="user"?"user":"assistant",
+      content:m.content
+    }));
+    history.push({role:"user",content:userText});
 
     try {
       const res=await fetch(`https://mwzpfrroagrhuenpdclt.supabase.co/functions/v1/ai-chat`,{
         method:"POST",
         headers:{"Content-Type":"application/json","Authorization":`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13enBmcnJvYWdyaHVlbnBkY2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NzU5NDgsImV4cCI6MjA5NTU1MTk0OH0.1XaAfisI75Iafk_tvGRoQNXDXYTzR7Zqsowl2Fb_dM4`},
-        body:JSON.stringify({message:userMsg,context:buildContext()}),
+        body:JSON.stringify({message:userText,context:buildContext(),history}),
       });
       const data=await res.json();
-      if(data.reply){setMessages(prev=>[...prev,{role:"ai",text:data.reply}]);}
-      else{setMessages(prev=>[...prev,{role:"ai",text:"Sorry, I couldn't get a response. Please check your AI setup in Settings."}]);}
+      if(data.reply){
+        const aiMsg={role:"ai",content:data.reply,conversation_id:activeConv.id,user_id:userId};
+        const {data:savedAi}=await supabase.from("ai_messages").insert(aiMsg).select().single();
+        setMessages(prev=>[...prev,savedAi]);
+        await supabase.from("ai_conversations").update({updated_at:new Date().toISOString()}).eq("id",activeConv.id);
+        setConversations(prev=>prev.map(c=>c.id===activeConv.id?{...c,updated_at:new Date().toISOString()}:c));
+      }
     } catch(e){
-      setMessages(prev=>[...prev,{role:"ai",text:"Connection error. Make sure the AI Edge Function is deployed."}]);
+      setMessages(prev=>[...prev,{role:"ai",content:"Connection error.",id:"err"}]);
     }
     setLoading(false);
   }
 
-  const quickPrompts=["Analyze my attendance","What should I study next?","Explain Organon of Medicine basics","How to improve my scores?","Create a study plan for exams"];
+  const activeConvs=conversations.filter(c=>!c.archived);
+  const archivedConvs=conversations.filter(c=>c.archived);
+  const quickPrompts=["Analyze my attendance","What should I study next?","Explain Organon basics","Create a study plan"];
 
   return (
-    <div style={{animation:"fadeUp 0.3s ease",display:"flex",flexDirection:"column",height:"calc(100vh - 120px)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>AI Assistant ✦</h2>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <div style={{width:7,height:7,borderRadius:"50%",background:C.accent,animation:"pulse 2s infinite"}}/>
-          <span style={{fontSize:11,color:C.accentText}}>Groq AI</span>
-        </div>
-      </div>
-
-      {/* Quick prompts */}
-      <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:12,paddingBottom:4,flexShrink:0}}>
-        {quickPrompts.map(q=>(
-          <button key={q} onClick={()=>setInput(q)} style={{flex:"0 0 auto",padding:"6px 12px",background:C.surface,border:`1px solid ${C.border}`,color:C.muted,fontSize:11,borderRadius:20,cursor:"pointer",fontFamily:F,whiteSpace:"nowrap"}}>
-            {q}
-          </button>
-        ))}
-      </div>
-
-      {/* Messages */}
-      <div className="chat-messages" style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:12,paddingBottom:16}}>
-        {messages.map((m,i)=>(
-          <div key={i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
-            {m.role==="ai"&&<div style={{width:28,height:28,borderRadius:8,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,marginRight:8,flexShrink:0,alignSelf:"flex-end"}}>✦</div>}
-            <div style={{
-              maxWidth:"80%",padding:"10px 14px",borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",
-              background:m.role==="user"?C.accent:C.card,
-              color:m.role==="user"?"#000":C.text,
-              fontSize:13,lineHeight:1.6,
-              border:m.role==="ai"?`1px solid ${C.border}`:"none",
-              whiteSpace:"pre-wrap",
-            }}>
-              {m.text}
-            </div>
-          </div>
-        ))}
-        {loading&&(
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{width:28,height:28,borderRadius:8,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>✦</div>
-            <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"16px 16px 16px 4px",padding:"10px 14px"}}>
-              <div style={{display:"flex",gap:4}}>
-                {[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:C.accent,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}
+    <div style={{animation:"fadeUp 0.3s ease",display:"flex",gap:12,height:"calc(100vh - 120px)"}}>
+      {/* Sidebar */}
+      {showSidebar&&(
+        <div style={{width:220,flexShrink:0,display:"flex",flexDirection:"column",gap:8,overflowY:"auto"}}>
+          <Btn onClick={newChat} style={{width:"100%",padding:"9px 0",fontSize:12}}>+ New Chat</Btn>
+          <div style={{flex:1,overflowY:"auto"}}>
+            {activeConvs.length===0&&<div style={{color:C.muted,fontSize:12,textAlign:"center",padding:16}}>No conversations yet</div>}
+            {activeConvs.map(conv=>(
+              <div key={conv.id} onClick={()=>selectConv(conv)} style={{padding:"8px 10px",borderRadius:8,background:activeConv?.id===conv.id?C.accentDim:C.card,border:`1px solid ${activeConv?.id===conv.id?C.accent:C.border}`,marginBottom:4,cursor:"pointer",position:"relative",group:true}}>
+                {editingTitle===conv.id?(
+                  <input value={newTitle} onChange={e=>setNewTitle(e.target.value)}
+                    onKeyDown={e=>{if(e.key==="Enter")renameConv(conv.id,newTitle);if(e.key==="Escape")setEditingTitle(null);}}
+                    autoFocus onClick={e=>e.stopPropagation()}
+                    style={{width:"100%",background:"transparent",border:"none",color:C.text,fontSize:12,fontFamily:F,outline:"none"}}/>
+                ):(
+                  <div style={{fontSize:12,fontWeight:activeConv?.id===conv.id?600:400,color:activeConv?.id===conv.id?C.accent:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginBottom:4}}>{conv.title}</div>
+                )}
+                <div style={{display:"flex",gap:4,marginTop:4}}>
+                  <button onClick={e=>{e.stopPropagation();setEditingTitle(conv.id);setNewTitle(conv.title);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,padding:"1px 4px",fontFamily:F}}>✏️</button>
+                  <button onClick={e=>{e.stopPropagation();archiveConv(conv.id);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,padding:"1px 4px",fontFamily:F}}>📦</button>
+                  <button onClick={e=>{e.stopPropagation();if(confirm("Delete this conversation?"))deleteConv(conv.id);}} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:10,padding:"1px 4px",fontFamily:F}}>🗑️</button>
+                </div>
               </div>
+            ))}
+            {archivedConvs.length>0&&(
+              <div>
+                <button onClick={()=>setShowArchived(!showArchived)} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:F,padding:"8px 0",width:"100%",textAlign:"left"}}>
+                  {showArchived?"▼":"►"} Archived ({archivedConvs.length})
+                </button>
+                {showArchived&&archivedConvs.map(conv=>(
+                  <div key={conv.id} onClick={()=>selectConv(conv)} style={{padding:"8px 10px",borderRadius:8,background:C.surface,border:`1px solid ${C.border}`,marginBottom:4,cursor:"pointer",opacity:0.6}}>
+                    <div style={{fontSize:11,color:C.muted,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{conv.title}</div>
+                    <div style={{display:"flex",gap:4,marginTop:4}}>
+                      <button onClick={e=>{e.stopPropagation();archiveConv(conv.id);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,fontFamily:F}}>↩️ Unarchive</button>
+                      <button onClick={e=>{e.stopPropagation();if(confirm("Delete?"))deleteConv(conv.id);}} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:10,fontFamily:F}}>🗑️</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Chat area */}
+      <div style={{flex:1,display:"flex",flexDirection:"column",minWidth:0}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={()=>setShowSidebar(!showSidebar)} style={{background:C.card,border:`1px solid ${C.border}`,color:C.muted,borderRadius:8,padding:"4px 8px",cursor:"pointer",fontSize:14}}>☰</button>
+            <h2 style={{fontSize:15,fontWeight:700}}>{activeConv?.title||"AI Assistant ✦"}</h2>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:C.accent,animation:"pulse 2s infinite"}}/>
+            <span style={{fontSize:11,color:C.accentText}}>Groq AI</span>
+          </div>
+        </div>
+
+        {!activeConv?(
+          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+            <div style={{fontSize:32}}>✦</div>
+            <div style={{fontSize:15,fontWeight:600}}>Start a conversation</div>
+            <div style={{fontSize:13,color:C.muted}}>Click "New Chat" or pick a quick prompt</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center",maxWidth:400}}>
+              {quickPrompts.map(q=>(
+                <button key={q} onClick={async()=>{await newChat();setInput(q);}} style={{padding:"8px 14px",background:C.card,border:`1px solid ${C.border}`,color:C.muted,fontSize:12,borderRadius:20,cursor:"pointer",fontFamily:F}}>
+                  {q}
+                </button>
+              ))}
             </div>
           </div>
+        ):(
+          <>
+            <div className="chat-messages" style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:12,paddingBottom:16}}>
+              {messages.length===0&&<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:32}}>Send a message to start</div>}
+              {messages.map((m,i)=>(
+                <div key={m.id||i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
+                  {m.role==="ai"&&<div style={{width:28,height:28,borderRadius:8,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,marginRight:8,flexShrink:0,alignSelf:"flex-end"}}>✦</div>}
+                  <div style={{maxWidth:"80%",padding:"10px 14px",borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",background:m.role==="user"?C.accent:C.card,color:m.role==="user"?"#000":C.text,fontSize:13,lineHeight:1.6,border:m.role==="ai"?`1px solid ${C.border}`:"none",whiteSpace:"pre-wrap"}}>
+                    {m.content}
+                  </div>
+                </div>
+              ))}
+              {loading&&(
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:28,height:28,borderRadius:8,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>✦</div>
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"16px 16px 16px 4px",padding:"10px 14px"}}>
+                    <div style={{display:"flex",gap:4}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:C.accent,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div>
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef}/>
+            </div>
+            <div className="chat-input-row" style={{flexShrink:0,paddingTop:8}}>
+              <Input placeholder="Ask anything..." value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} style={{flex:1}}/>
+              <Btn onClick={send} disabled={loading||!input.trim()} style={{padding:"9px 16px",flexShrink:0}}>{loading?"...":"Send"}</Btn>
+            </div>
+          </>
         )}
-        <div ref={bottomRef}/>
-      </div>
-
-      {/* Input */}
-      <div className="chat-input-row" style={{flexShrink:0,paddingTop:8}}>
-        <Input
-          placeholder="Ask anything about your studies..."
-          value={input}
-          onChange={e=>setInput(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
-          style={{flex:1}}
-        />
-        <Btn onClick={send} disabled={loading||!input.trim()} style={{padding:"9px 16px",flexShrink:0}}>
-          {loading?"...":"Send"}
-        </Btn>
       </div>
     </div>
   );
