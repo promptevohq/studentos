@@ -595,7 +595,7 @@ function Assignments({assignments,setAssignments,userId}) {
 function Exams({exams,setExams,userId}) {
   const [showAdd,setShowAdd]=useState(false);
   const [newE,setNewE]=useState({subject:"",date:"",time:"",type:"Midterm",hall:""});
-
+const [customExamTypes,setCustomExamTypes]=useState([]);
   async function add() {
     if(!newE.subject||!newE.date) return;
     const {data,error}=await supabase.from("exams").insert({user_id:userId,...newE}).select().single();
@@ -619,9 +619,21 @@ function Exams({exams,setExams,userId}) {
           <Input type="time" value={newE.time} onChange={e=>setNewE(p=>({...p,time:e.target.value}))} style={{flex:"1 1 120px"}}/>
         </div>
         <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
-          <Select value={newE.type} onChange={e=>setNewE(p=>({...p,type:e.target.value}))} style={{flex:"1 1 120px"}}>
-            <option>Midterm</option><option>Final</option><option>Quiz</option><option>Practical</option><option>Viva</option><option>Internal</option>
-          </Select>
+          <div style={{flex:"1 1 120px"}}>
+  <Input placeholder="Exam type" value={newE.type} onChange={e=>setNewE(p=>({...p,type:e.target.value}))} style={{width:"100%"}}/>
+  <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>
+    {["Midterm","Final","Quiz","Practical","Viva","Internal","Theory","Oral",...(customExamTypes||[])].map(t=>(
+      <button key={t} onClick={()=>setNewE(p=>({...p,type:t}))} style={{background:newE.type===t?C.accent:C.surface,border:`1px solid ${newE.type===t?C.accent:C.border}`,color:newE.type===t?"#000":C.muted,fontSize:10,padding:"3px 8px",borderRadius:6,cursor:"pointer",fontFamily:F,display:"flex",alignItems:"center",gap:4}}>
+        {t}{customExamTypes?.includes(t)&&<span onClick={e=>{e.stopPropagation();setCustomExamTypes(prev=>prev.filter(x=>x!==t));}} style={{color:C.danger,fontWeight:700}}>×</span>}
+      </button>
+    ))}
+    {newE.type&&!["Midterm","Final","Quiz","Practical","Viva","Internal","Theory","Oral",...(customExamTypes||[])].includes(newE.type)&&(
+      <button onClick={()=>setCustomExamTypes(prev=>[...(prev||[]),newE.type])} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accentText,fontSize:10,padding:"3px 8px",borderRadius:6,cursor:"pointer",fontFamily:F}}>
+        + Save "{newE.type}"
+      </button>
+    )}
+  </div>
+</div>
           <Input placeholder="Hall / Room" value={newE.hall} onChange={e=>setNewE(p=>({...p,hall:e.target.value}))} style={{flex:"1 1 120px"}}/>
         </div>
         <div style={{display:"flex",gap:8}}><Btn onClick={add}>Add</Btn><Btn onClick={()=>setShowAdd(false)} variant="ghost">Cancel</Btn></div>
