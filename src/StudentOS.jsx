@@ -1292,7 +1292,7 @@ export default function App() {
     assignments:<Assignments assignments={assignments} setAssignments={setAssignments} userId={user.id}/>,
     exams:<Exams exams={exams} setExams={setExams} userId={user.id}/>,
     performance:<Performance scores={scores} setScores={setScores} userId={user.id} profile={profile}/>,
-    ai:<AIChat subjects={subjects} assignments={assignments} exams={exams} scores={scores} profile={profile} attLogs={attLogs}/>,
+    ai:<AIChat subjects={subjects} assignments={assignments} exams={exams} scores={scores} profile={profile} attLogs={attLogs} userId={user.id}/>,
     timetable:<Timetable timetable={timetable} setTimetable={setTimetable} userId={user.id} subjects={subjects}/>,
     profile:<Profile profile={profile} setProfile={setProfile} userId={user.id} onLogout={logout}/>,
   };
