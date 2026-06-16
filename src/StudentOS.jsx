@@ -253,23 +253,50 @@ function Sidebar({active,onNav,profile,onLogout}) {
 
 // ── Mobile Bottom Nav ─────────────────────────────────────────────────────────
 function BottomNav({active,onNav}) {
+  const [showMore,setShowMore]=useState(false);
   const mainNav=[
     {id:"dashboard",icon:"⬡",label:"Home"},
     {id:"attendance",icon:"◎",label:"Attend"},
-    {id:"performance",icon:"▲",label:"Marks"},
     {id:"ai",icon:"✦",label:"AI"},
     {id:"profile",icon:"◉",label:"Profile"},
   ];
-  return (
-    <div className="bottom-nav" style={{justifyContent:"space-around",alignItems:"center"}}>
-      {mainNav.map(item=>{
-        const isActive=active===item.id;
-        return <button key={item.id} onClick={()=>onNav(item.id)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",color:isActive?C.accent:C.muted,cursor:"pointer",fontFamily:F,padding:"4px 8px",minWidth:52,flex:1}}>
-          <span style={{fontSize:20}}>{item.icon}</span>
-          <span style={{fontSize:9,fontWeight:isActive?700:400,letterSpacing:"0.02em"}}>{item.label}</span>
-        </button>;
-      })}
-    </div>
+  const moreNav=[
+    {id:"assignments",icon:"◈",label:"Assignments"},
+    {id:"exams",icon:"◷",label:"Exams"},
+    {id:"performance",icon:"▲",label:"Marks"},
+    {id:"timetable",icon:"▦",label:"Timetable"},
+  ];
+  const moreActive=moreNav.some(n=>n.id===active);
+  return(
+    <>
+      {showMore&&(
+        <div onClick={()=>setShowMore(false)} style={{position:"fixed",inset:0,background:"#00000066",zIndex:99}}/>
+      )}
+      {showMore&&(
+        <div style={{position:"fixed",bottom:65,left:0,right:0,background:C.surface,borderTop:`1px solid ${C.border}`,zIndex:100,padding:"12px 0",animation:"fadeUp 0.2s ease"}}>
+          {moreNav.map(item=>{
+            const isActive=active===item.id;
+            return <button key={item.id} onClick={()=>{onNav(item.id);setShowMore(false);}} style={{display:"flex",alignItems:"center",gap:16,width:"100%",padding:"14px 24px",background:"none",border:"none",color:isActive?C.accent:C.text,cursor:"pointer",fontFamily:F,fontSize:15,fontWeight:isActive?600:400,borderBottom:`1px solid ${C.border}`}}>
+              <span style={{fontSize:20}}>{item.icon}</span>{item.label}
+              {isActive&&<span style={{marginLeft:"auto",width:6,height:6,background:C.accent,borderRadius:"50%"}}/>}
+            </button>;
+          })}
+        </div>
+      )}
+      <div className="bottom-nav" style={{justifyContent:"space-around",alignItems:"center"}}>
+        {mainNav.map(item=>{
+          const isActive=active===item.id;
+          return <button key={item.id} onClick={()=>{onNav(item.id);setShowMore(false);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",color:isActive?C.accent:C.muted,cursor:"pointer",fontFamily:F,padding:"4px 8px",minWidth:52,flex:1}}>
+            <span style={{fontSize:20}}>{item.icon}</span>
+            <span style={{fontSize:9,fontWeight:isActive?700:400}}>{item.label}</span>
+          </button>;
+        })}
+        <button onClick={()=>setShowMore(!showMore)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",color:moreActive?C.accent:C.muted,cursor:"pointer",fontFamily:F,padding:"4px 8px",minWidth:52,flex:1}}>
+          <span style={{fontSize:20}}>⋯</span>
+          <span style={{fontSize:9,fontWeight:moreActive?700:400}}>More</span>
+        </button>
+      </div>
+    </>
   );
 }
 
