@@ -9,28 +9,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="StudentOS" />
     <meta name="description" content="Your Academic Command Center" />
-
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json" />
-
-    <!-- Apple Touch Icons (add actual icons to /public/) -->
     <link rel="apple-touch-icon" href="/icon-192.png" />
-
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%234FFFB0'/><text y='.9em' font-size='72' x='12' font-weight='bold' fill='black'>S</text></svg>" />
-
     <title>StudentOS</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-      // Register service worker for PWA
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(console.error);
-        });
-      }
-    </script>
   </body>
 </html>
