@@ -209,6 +209,7 @@ const NAV=[
   {id:"assignments",icon:"◈",label:"Assignments"},
   {id:"exams",icon:"◷",label:"Exams"},
   {id:"performance",icon:"▲",label:"Performance"},
+  {id:"study",icon:"📖",label:"Study"},
   {id:"ai",icon:"✦",label:"AI"},
   {id:"timetable",icon:"▦",label:"Timetable"},
   {id:"profile",icon:"◉",label:"Profile"},
@@ -386,6 +387,113 @@ function Dashboard({subjects,assignments,exams,scores,profile,onNav}) {
           );})}
         </div>
       </Card>}
+    </div>
+  );
+}
+
+// ── Study Guide ───────────────────────────────────────────────────────────────
+const BHMS_TOPICS = {
+  "Organon": ["Aphorisms 1-10","Aphorisms 11-20","Aphorisms 21-30","Philosophy of Homoeopathy","Vital Force","Disease Classification","Drug Proving","Posology","Case Taking","Miasms"],
+  "Materia Medica": ["Aconitum Napellus","Belladonna","Bryonia Alba","Calcarea Carbonica","Lycopodium","Natrum Muriaticum","Nux Vomica","Pulsatilla","Rhus Toxicodendron","Sulphur"],
+  "Pathology": ["Cell Injury","Inflammation","Repair & Regeneration","Circulatory Disturbances","Neoplasia","Microbiology Basics","Immunology","Parasitology","Haematology","Systemic Pathology"],
+  "Gynaecology": ["Menstrual Disorders","Infections of Female Genital Tract","Endometriosis","Fibroid Uterus","Ovarian Tumours","Infertility","Antenatal Care","Labour","Postnatal Care","Obstetric Complications"],
+  "Surgery": ["Wound Healing","Surgical Infections","Tumours","Fractures & Dislocations","ENT Diseases","Eye Diseases","Dental Surgery","Burn Management","Shock","Principles of Surgery"],
+  "FMT": ["Forensic Medicine Basics","Medical Jurisprudence","Toxicology","Asphyxia","Injuries","Sexual Offences","Medical Ethics","Death & its Types","Exhumation","Medicolegal Reports"],
+  "Repertory": ["Introduction to Repertory","Kent Repertory","Boger Boenninghausen","Synthesis Repertory","Repertorisation Methods","Mind Rubrics","Generals","Particulars","Case Analysis","Practical Repertorisation"],
+  "POM": ["History Taking","Clinical Examination","Fever","Respiratory System","Cardiovascular System","GI System","Urinary System","Nervous System","Endocrine Disorders","Homoeopathic Prescribing"],
+};
+
+function StudyGuide({subjects,exams}) {
+  const [selSubject,setSelSubject]=useState(Object.keys(BHMS_TOPICS)[0]);
+  const [checked,setChecked]=useState(()=>{try{return JSON.parse(localStorage.getItem("study_checked")||"{}")}catch{return {}}});
+  const [tab,setTab]=useState("topics");
+
+  function toggle(key) {
+    const updated={...checked,[key]:!checked[key]};
+    setChecked(updated);
+    localStorage.setItem("study_checked",JSON.stringify(updated));
+  }
+
+  const topics=BHMS_TOPICS[selSubject]||[];
+  const done=topics.filter(t=>checked[`${selSubject}_${t}`]).length;
+  const pct=topics.length?Math.round((done/topics.length)*100):0;
+
+  const upcomingExams=[...exams].filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>Study Guide</h2>
+        <div style={{display:"flex",gap:8}}>
+          {["topics","planner"].map(t=>(
+            <button key={t} onClick={()=>setTab(t)} style={{background:tab===t?C.accent:C.card,border:`1px solid ${tab===t?C.accent:C.border}`,color:tab===t?"#000":C.muted,fontSize:11,fontWeight:600,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:F,textTransform:"capitalize"}}>{t}</button>
+          ))}
+        </div>
+      </div>
+
+      {tab==="topics"&&<>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+          {Object.keys(BHMS_TOPICS).map(sub=>{
+            const t=BHMS_TOPICS[sub];
+            const d=t.filter(tp=>checked[`${sub}_${tp}`]).length;
+            return <button key={sub} onClick={()=>setSelSubject(sub)} style={{background:selSubject===sub?C.accent:C.card,border:`1px solid ${selSubject===sub?C.accent:C.border}`,color:selSubject===sub?"#000":C.muted,fontSize:11,fontWeight:600,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontFamily:F}}>
+              {sub} {d>0&&<span style={{opacity:0.7}}>({d}/{t.length})</span>}
+            </button>;
+          })}
+        </div>
+        <Card style={{marginBottom:16}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{fontSize:14,fontWeight:700}}>{selSubject}</div>
+            <div style={{fontSize:12,color:pct===100?C.accent:C.muted,fontFamily:M,fontWeight:600}}>{done}/{topics.length} done</div>
+          </div>
+          <div style={{height:6,background:C.border,borderRadius:3,marginBottom:16,overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${pct}%`,background:pct===100?C.accent:C.blue,borderRadius:3,transition:"width 0.4s ease"}}/>
+          </div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {topics.map(topic=>{
+              const key=`${selSubject}_${topic}`;
+              const done=checked[key];
+              return <div key={topic} onClick={()=>toggle(key)} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:done?C.accentDim:C.surface,borderRadius:10,border:`1px solid ${done?C.accent+"44":C.border}`,cursor:"pointer",transition:"all 0.2s"}}>
+                <div style={{width:20,height:20,borderRadius:6,background:done?C.accent:C.border,border:`1px solid ${done?C.accent:C.muted}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12,color:"#000",fontWeight:700}}>{done?"✓":""}</div>
+                <span style={{fontSize:13,color:done?C.accentText:C.text,textDecoration:done?"line-through":"none"}}>{topic}</span>
+              </div>;
+            })}
+          </div>
+        </Card>
+      </>}
+
+      {tab==="planner"&&<>
+        {upcomingExams.length===0?<Card style={{textAlign:"center",padding:48}}><div style={{fontSize:32,marginBottom:12}}>📅</div><div style={{color:C.muted,fontSize:14}}>No upcoming exams. Add exams to get a study plan!</div></Card>
+        :<div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {upcomingExams.slice(0,5).map(e=>{
+            const d=daysLeft(e.date);
+            const subKey=Object.keys(BHMS_TOPICS).find(k=>e.subject.toLowerCase().includes(k.toLowerCase()))||null;
+            const topics=subKey?BHMS_TOPICS[subKey]:[];
+            const pending=topics.filter(t=>!checked[`${subKey}_${t}`]);
+            const hoursPerDay=pending.length>0&&d>0?Math.ceil((pending.length*0.5)/d):0;
+            const urgency=d<=7?C.danger:d<=14?C.warn:C.blue;
+            return <Card key={e.id} glow={urgency}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                <div>
+                  <div style={{fontSize:15,fontWeight:700,marginBottom:4}}>{e.subject}</div>
+                  <Badge color={urgency} bg={`${urgency}22`}>{e.type} · {e.date}</Badge>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontFamily:M,fontSize:28,fontWeight:700,color:urgency,lineHeight:1}}>{d}</div>
+                  <div style={{fontSize:10,color:C.muted}}>days left</div>
+                </div>
+              </div>
+              {subKey&&<>
+                <div style={{fontSize:11,color:C.muted,marginBottom:8}}>{pending.length} topics pending · ~{hoursPerDay}h/day recommended</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {pending.slice(0,5).map(t=><span key={t} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:11,color:C.muted}}>{t}</span>)}
+                  {pending.length>5&&<span style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:11,color:C.muted}}>+{pending.length-5} more</span>}
+                </div>
+              </>}
+            </Card>;
+          })}
+        </div>}
+      </>}
     </div>
   );
 }
@@ -821,9 +929,12 @@ function Performance({scores,setScores,userId,profile}) {
         <div style={{fontSize:13,fontWeight:600,marginBottom:12}}>Add Score Record</div>
         <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
           <Input placeholder="Subject" value={newS.subject} onChange={e=>setNewS(p=>({...p,subject:e.target.value}))} style={{flex:"2 1 140px"}}/>
-          <Select value={newS.exam_type} onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))} style={{flex:"1 1 100px"}}>
-            <option>Internal</option><option>Midterm</option><option>Final</option><option>Practical</option><option>Viva</option>
+          <Select value={["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)?newS.exam_type:"Custom"} onChange={e=>{if(e.target.value==="Custom"){setNewS(p=>({...p,exam_type:""}))}else{setNewS(p=>({...p,exam_type:e.target.value}));}}} style={{flex:"1 1 100px"}}>
+            <option>Internal</option><option>Midterm</option><option>Final</option><option>Practical</option><option>Viva</option><option value="Custom">Custom</option>
           </Select>
+          {!["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)&&(
+            <Input placeholder="Exam name (e.g. Sessional 1)" value={newS.exam_type} onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))} style={{flex:"2 1 140px"}}/>
+          )}
           <Input type="date" value={newS.date} onChange={e=>setNewS(p=>({...p,date:e.target.value}))} style={{flex:"1 1 120px"}}/>
         </div>
         {/* Theory */}
@@ -999,14 +1110,40 @@ function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
     const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75).map(s=>s.name);
     const pending=assignments.filter(a=>a.status!=="submitted").length;
     const upcoming=exams.filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,3);
-    return `You are an academic AI assistant for a BHMS (Homoeopathic Medical Science) student.
-Student: ${profile?.name||"Student"}, Program: ${profile?.program||"BHMS"}, Semester: ${profile?.semester||""}
-Average attendance: ${avgAtt}% ${avgAtt<75?"(BELOW 75% - critical!)":""}
+    const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
+    return `You are an academic AI assistant built into StudentOS — a web app for BHMS students at Monark Homoeopathic Medical College, Vahelal, Ahmedabad (Monark University).
+
+ABOUT StudentOS:
+StudentOS is a free academic management platform for BHMS students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
+
+STUDENT PROFILE:
+Name: ${profile?.name||"Student"}
+Program: ${profile?.program||"BHMS"} | Semester: ${profile?.semester||"2nd BHMS"} | College: ${profile?.college||"Monark Homoeopathic Medical College"}
+
+CURRENT ATTENDANCE:
+Average: ${avgAtt}% ${avgAtt<75?"⚠️ BELOW 75% - CRITICAL":"✓ Good"}
+${subjectDetails}
 Low attendance subjects: ${lowAtt.join(", ")||"None"}
-Pending assignments: ${pending}
-Upcoming exams: ${upcoming.map(e=>`${e.subject} in ${daysLeft(e.date)} days`).join(", ")||"None"}
-BHMS subjects include: Organon, Materia Medica, Anatomy, Physiology, Pathology, Practice of Medicine.
-Be helpful, concise, and personalized. Remember the conversation history.`;
+
+ASSIGNMENTS: ${pending} pending tasks
+UPCOMING EXAMS: ${upcoming.map(e=>`${e.subject} in ${daysLeft(e.date)} days`).join(", ")||"None"}
+
+BHMS 2nd YEAR SUBJECTS:
+- Organon of Medicine & Homoeopathic Philosophy (Theory + Practical)
+- Materia Medica / HMM (Homoeopathic Materia Medica)
+- Pathology & Microbiology (Theory + Practical)  
+- Forensic Medicine & Toxicology / FMT (Theory + Practical)
+- Surgery including ENT, Eye, Dental (Theory + Practical)
+- Gynaecology & Obstetrics (Theory + Practical)
+- Practice of Medicine / POM (Theory)
+- Repertory (Theory)
+- Yoga & Naturopathy / PT
+
+NCH RULES: Minimum 75% attendance required. With medical certificate, 65% may be condoned by Principal.
+
+BHMS MARKING SCHEME: Theory max 150, Practical/Oral max 100, Internal Assessment max 50. Passing: 50% in each.
+
+Be helpful, concise, and personalized. You know the student's data. Answer academic questions, help with study plans, explain Homoeopathic concepts, and give attendance/exam advice.`;
   }
 
   async function send() {
@@ -1353,6 +1490,7 @@ export default function App() {
     assignments:<Assignments assignments={assignments} setAssignments={setAssignments} userId={user.id}/>,
     exams:<Exams exams={exams} setExams={setExams} userId={user.id}/>,
     performance:<Performance scores={scores} setScores={setScores} userId={user.id} profile={profile}/>,
+    study:<StudyGuide subjects={subjects} exams={exams}/>,
     ai:<AIChat subjects={subjects} assignments={assignments} exams={exams} scores={scores} profile={profile} attLogs={attLogs} userId={user.id}/>,
     timetable:<Timetable timetable={timetable} setTimetable={setTimetable} userId={user.id} subjects={subjects}/>,
     profile:<Profile profile={profile} setProfile={setProfile} userId={user.id} onLogout={logout}/>,
