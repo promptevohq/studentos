@@ -1006,11 +1006,12 @@ function Performance({scores,setScores,userId,profile}) {
         <div style={{fontSize:13,fontWeight:600,marginBottom:12}}>Add Score Record</div>
         <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
           <Input placeholder="Subject" value={newS.subject} onChange={e=>setNewS(p=>({...p,subject:e.target.value}))} style={{flex:"2 1 140px"}}/>
-          <Select value={["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)?newS.exam_type:"Custom"} onChange={e=>{if(e.target.value==="Custom"){setNewS(p=>({...p,exam_type:""}))}else{setNewS(p=>({...p,exam_type:e.target.value}));}}} style={{flex:"1 1 100px"}}>
-            <option>Internal</option><option>Midterm</option><option>Final</option><option>Practical</option><option>Viva</option><option value="Custom">Custom</option>
-          </Select>
-          {!["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)&&(
-            <Input placeholder="Exam name (e.g. Sessional 1)" value={newS.exam_type} onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))} style={{flex:"2 1 140px"}}/>
+ <Input 
+  placeholder="Exam type (e.g. Internal, Midterm, Sessional 1...)" 
+  value={newS.exam_type} 
+  onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))} 
+  style={{flex:"1 1 140px"}}
+/>
           )}
           <Input type="date" value={newS.date} onChange={e=>setNewS(p=>({...p,date:e.target.value}))} style={{flex:"1 1 120px"}}/>
         </div>
@@ -1188,11 +1189,10 @@ function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
     const pending=assignments.filter(a=>a.status!=="submitted").length;
     const upcoming=exams.filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,3);
     const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
-    return `You are an academic AI assistant built into StudentOS — a web app for BHMS students at Monark Homoeopathic Medical College, Vahelal, Ahmedabad (Monark University).
-
+return `You are an academic AI assistant built into StudentOS — a free academic management platform for all students. You help with attendance tracking, assignments, exam countdowns, performance/marks tracking, study planning, and general academic questions.
 ABOUT StudentOS:
-StudentOS is a free academic management platform for BHMS students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
-
+ABOUT StudentOS:
+StudentOS is a free academic management platform for all students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
 STUDENT PROFILE:
 Name: ${profile?.name||"Student"}
 Program: ${profile?.program||"BHMS"} | Semester: ${profile?.semester||"2nd BHMS"} | College: ${profile?.college||"Monark Homoeopathic Medical College"}
