@@ -265,6 +265,7 @@ function BottomNav({active,onNav}) {
     {id:"assignments",icon:"◈",label:"Assignments"},
     {id:"exams",icon:"◷",label:"Exams"},
     {id:"performance",icon:"▲",label:"Marks"},
+    {id:"study",icon:"📖",label:"Study Guide"},
     {id:"timetable",icon:"▦",label:"Timetable"},
   ];
   const moreActive=moreNav.some(n=>n.id===active);
