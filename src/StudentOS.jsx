@@ -1223,8 +1223,14 @@ UPCOMING EXAMS:
 ${upcoming.map(e=>`${e.subject}`).join(", ") || "None"}
 
 Only use the student's actual stored data. If information is missing, say it has not been added yet. Do not assume subjects, attendance, college, semester, or academic rules.
-Be helpful, concise, and personalized. You know the student's data. Answer academic questions, help with study plans, explain Homoeopathic concepts, and give attendance/exam advice.`;
-  }
+Be helpful, concise, and personalized. You know the student's data. Answer academic questions, help with study plans, explain concepts from the student's actual course only, and give attendance and exam advice.
+
+Never assume a course, subjects, syllabus, or academic program.
+Only use data stored in the profile, subjects, assignments, exams, and attendance.
+If subjects are empty, say "No subjects have been added yet."
+Never generate BHMS subjects unless they exist in the stored data.
+`;
+}
 
   async function send() {
     if(!input.trim()||loading) return;
@@ -1273,7 +1279,7 @@ Be helpful, concise, and personalized. You know the student's data. Answer acade
 
   const activeConvs=conversations.filter(c=>!c.archived);
   const archivedConvs=conversations.filter(c=>c.archived);
-  const quickPrompts=["Analyze my attendance","What should I study next?","Explain Organon basics","Create a study plan"];
+  const quickPrompts=["Analyze my attendance","What should I study next?","Explain a diffucult topics","Create a study plan"];
 
   return (
     <div style={{animation:"fadeUp 0.3s ease",display:"flex",gap:12,height:"calc(100vh - 120px)"}}>
