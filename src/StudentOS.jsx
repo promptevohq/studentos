@@ -147,8 +147,16 @@ function Auth({onAuth}) {
     setLoading(true);setErr("");
     const {error}=await supabase.from("profiles").upsert({id:uid,name,college,program,semester});
     if(error){setErr(error.message);setLoading(false);return;}
-    const {data:{user}}=await supabase.auth.getUser();
-    onAuth(user);
+    const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  setErr("Please sign up or log in again.");
+  setLoading(false);
+  return;
+}
+
+onAuth(user);
+setLoading(false);
   }
   async function forgotPassword() {
     if(!email){setErr("Enter your email first");return;}
@@ -1180,14 +1188,16 @@ function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
   }
 
   function buildContext() {
+
     const avgAtt=subjects.length?Math.round(subjects.reduce((s,sub)=>s+att(sub.attended||0,sub.total||0),0)/subjects.length):0;
     const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75).map(s=>s.name);
     const pending=assignments.filter(a=>a.status!=="submitted").length;
     const upcoming=exams.filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,3);
-    const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
+  const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
+
+return `
 ABOUT StudentOS:
 StudentOS is a free academic management platform for all students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
-
 STUDENT PROFILE:
 Name: ${profile?.name || "Student"}
 Program: ${profile?.program || "Not specified"} | Semester: ${profile?.semester || "Not specified"} | College: ${profile?.college || "Not specified"}
