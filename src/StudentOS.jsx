@@ -397,7 +397,8 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
   const [duration,setDuration]=useState("overall");
   const [customFrom,setCustomFrom]=useState("");
   const [customTo,setCustomTo]=useState("");
-
+const [editingSub,setEditingSub]=useState(null);
+const [editVals,setEditVals]=useState({attended:"",total:""});
   // compute date range
   function getRange() {
     const now=new Date(); now.setHours(23,59,59,999);
@@ -429,6 +430,14 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
       setSubjects(prev=>prev.map(s=>s.id===sub.id?{...s,...updates}:s));
     }
   }
+
+async function saveManualEdit(sub) {
+  const attended=parseInt(editVals.attended)||0;
+  const total=parseInt(editVals.total)||0;
+  await supabase.from("subjects").update({attended,total}).eq("id",sub.id);
+  setSubjects(prev=>prev.map(s=>s.id===sub.id?{...s,attended,total}:s));
+  setEditingSub(null);
+}  
 
   async function addSubject() {
     if(!newS.name) return;
@@ -527,9 +536,22 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
                   {p<75&&total>0?<div style={{fontSize:11,color:C.danger,marginBottom:8}}>Need {needed} more to reach 75%</div>
                     :total>0?<div style={{fontSize:11,color:C.accentText,marginBottom:8}}>Can miss {canMiss} more class{canMiss!==1?"es":""}</div>:<div style={{marginBottom:8}}/>}
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    <Btn onClick={()=>markClass(sub,"present")} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accent,fontSize:11,padding:"5px 10px"}}>✓ Present</Btn>
-                    <Btn onClick={()=>markClass(sub,"absent")} variant="danger" style={{fontSize:11,padding:"5px 10px"}}>✗ Absent</Btn>
-                  </div>
+  <Btn onClick={()=>markClass(sub,"present")} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accent,fontSize:11,padding:"5px 10px"}}>✓ Present</Btn>
+  <Btn onClick={()=>markClass(sub,"absent")} variant="danger" style={{fontSize:11,padding:"5px 10px"}}>✗ Absent</Btn>
+onClick={()=>{setEditingSub(editingSub===sub.id?null:sub.id);setEditVals({attended:sub.attended||0,total:sub.total||0});}}</div>
+{editingSub===sub.id&&(
+  <div style={{display:"flex",gap:8,marginTop:10,alignItems:"flex-end"}}>
+    <div style={{flex:1}}>
+      <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Attended</div>
+      <Input type="number" value={editVals.attended} onChange={e=>setEditVals(p=>({...p,attended:e.target.value}))} style={{width:"100%"}}/>
+    </div>
+    <div style={{flex:1}}>
+      <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Total</div>
+      <Input type="number" value={editVals.total} onChange={e=>setEditVals(p=>({...p,total:e.target.value}))} style={{width:"100%"}}/>
+    </div>
+    <Btn onClick={()=>saveManualEdit(sub)} style={{padding:"9px 14px"}}>Save</Btn>
+  </div>
+)}
                 </div>
               </div>
               {showChart&&chartData.length>0&&(
