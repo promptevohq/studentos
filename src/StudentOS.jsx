@@ -1185,14 +1185,12 @@ function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
     const pending=assignments.filter(a=>a.status!=="submitted").length;
     const upcoming=exams.filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,3);
     const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
-return `You are an academic AI assistant built into StudentOS — a free academic management platform for all students. You help with attendance tracking, assignments, exam countdowns, performance/marks tracking, study planning, and general academic questions.
-ABOUT StudentOS:
 ABOUT StudentOS:
 StudentOS is a free academic management platform for all students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
-STUDENT PROFILE:
-Name: ${profile?.name||"Student"}
-Program: ${profile?.program||"BHMS"} | Semester: ${profile?.semester||"2nd BHMS"} | College: ${profile?.college||"Monark Homoeopathic Medical College"}
 
+STUDENT PROFILE:
+Name: ${profile?.name || "Student"}
+Program: ${profile?.program || "Not specified"} | Semester: ${profile?.semester || "Not specified"} | College: ${profile?.college || "Not specified"}
 CURRENT ATTENDANCE:
 Average: ${avgAtt}% ${avgAtt<75?"⚠️ BELOW 75% - CRITICAL":"✓ Good"}
 ${subjectDetails}
