@@ -1004,15 +1004,11 @@ function Performance({scores,setScores,userId,profile}) {
       {/* Add form */}
       {showAdd&&<Card style={{marginBottom:16,background:C.surface}}>
         <div style={{fontSize:13,fontWeight:600,marginBottom:12}}>Add Score Record</div>
-        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
-          <Input placeholder="Subject" value={newS.subject} onChange={e=>setNewS(p=>({...p,subject:e.target.value}))} style={{flex:"2 1 140px"}}/>
- <Input 
-  placeholder="Exam type (e.g. Internal, Midterm, Sessional 1...)" 
+        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}> <Input placeholder="Exam type (e.g. Internal, Midterm, Sessional 1...)" 
   value={newS.exam_type} 
   onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))} 
   style={{flex:"1 1 140px"}}
 />
-          )}
           <Input type="date" value={newS.date} onChange={e=>setNewS(p=>({...p,date:e.target.value}))} style={{flex:"1 1 120px"}}/>
         </div>
         {/* Theory */}
