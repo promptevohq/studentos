@@ -404,22 +404,78 @@ const BHMS_TOPICS = {
   "POM": ["History Taking","Clinical Examination","Fever","Respiratory System","Cardiovascular System","GI System","Urinary System","Nervous System","Endocrine Disorders","Homoeopathic Prescribing"],
 };
 
-function StudyGuide({subjects,exams}) {
+function StudyGuide({subjects,exams,userId}) {
   const [selSubject,setSelSubject]=useState(Object.keys(BHMS_TOPICS)[0]);
-  const [checked,setChecked]=useState(()=>{try{return JSON.parse(localStorage.getItem("study_checked")||"{}")}catch{return {}}});
+  const [topics,setTopics]=useState({});
+  const [loading,setLoading]=useState(true);
+  const [editingId,setEditingId]=useState(null);
+  const [editText,setEditText]=useState("");
+  const [newTopic,setNewTopic]=useState("");
+  const [showAdd,setShowAdd]=useState(false);
   const [tab,setTab]=useState("topics");
 
-  function toggle(key) {
-    const updated={...checked,[key]:!checked[key]};
-    setChecked(updated);
-    localStorage.setItem("study_checked",JSON.stringify(updated));
+  useEffect(()=>{
+    loadTopics();
+  },[userId]);
+
+  async function loadTopics() {
+    const {data}=await supabase.from("study_topics").select("*").eq("user_id",userId);
+    if(data&&data.length>0){
+      const grouped={};
+      data.forEach(t=>{
+        if(!grouped[t.subject]) grouped[t.subject]=[];
+        grouped[t.subject].push(t);
+      });
+      setTopics(grouped);
+    } else {
+      await seedDefaults();
+    }
+    setLoading(false);
   }
 
-  const topics=BHMS_TOPICS[selSubject]||[];
-  const done=topics.filter(t=>checked[`${selSubject}_${t}`]).length;
-  const pct=topics.length?Math.round((done/topics.length)*100):0;
+  async function seedDefaults() {
+    const rows=[];
+    Object.entries(BHMS_TOPICS).forEach(([sub,tlist])=>{
+      tlist.forEach(t=>rows.push({user_id:userId,subject:sub,topic:t,done:false}));
+    });
+    const {data}=await supabase.from("study_topics").insert(rows).select();
+    if(data){
+      const grouped={};
+      data.forEach(t=>{if(!grouped[t.subject])grouped[t.subject]=[];grouped[t.subject].push(t);});
+      setTopics(grouped);
+    }
+  }
 
+  async function toggleDone(t) {
+    await supabase.from("study_topics").update({done:!t.done}).eq("id",t.id);
+    setTopics(prev=>({...prev,[t.subject]:prev[t.subject].map(x=>x.id===t.id?{...x,done:!x.done}:x)}));
+  }
+
+  async function deleteTopic(t) {
+    await supabase.from("study_topics").delete().eq("id",t.id);
+    setTopics(prev=>({...prev,[t.subject]:prev[t.subject].filter(x=>x.id!==t.id)}));
+  }
+
+  async function addTopic() {
+    if(!newTopic.trim()) return;
+    const {data}=await supabase.from("study_topics").insert({user_id:userId,subject:selSubject,topic:newTopic.trim(),done:false}).select().single();
+    if(data){setTopics(prev=>({...prev,[selSubject]:[...(prev[selSubject]||[]),data]}));}
+    setNewTopic("");setShowAdd(false);
+  }
+
+  async function saveEdit(t) {
+    if(!editText.trim()) return;
+    await supabase.from("study_topics").update({topic:editText.trim()}).eq("id",t.id);
+    setTopics(prev=>({...prev,[t.subject]:prev[t.subject].map(x=>x.id===t.id?{...x,topic:editText.trim()}:x)}));
+    setEditingId(null);setEditText("");
+  }
+
+  const currentTopics=topics[selSubject]||[];
+  const done=currentTopics.filter(t=>t.done).length;
+  const pct=currentTopics.length?Math.round((done/currentTopics.length)*100):0;
   const upcomingExams=[...exams].filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date));
+
+  if(loading) return <div style={{textAlign:"center",padding:48,color:C.muted}}>Loading study guide...</div>;
 
   return (
     <div style={{animation:"fadeUp 0.3s ease"}}>
@@ -435,30 +491,50 @@ function StudyGuide({subjects,exams}) {
       {tab==="topics"&&<>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
           {Object.keys(BHMS_TOPICS).map(sub=>{
-            const t=BHMS_TOPICS[sub];
-            const d=t.filter(tp=>checked[`${sub}_${tp}`]).length;
+            const t=topics[sub]||[];
+            const d=t.filter(tp=>tp.done).length;
             return <button key={sub} onClick={()=>setSelSubject(sub)} style={{background:selSubject===sub?C.accent:C.card,border:`1px solid ${selSubject===sub?C.accent:C.border}`,color:selSubject===sub?"#000":C.muted,fontSize:11,fontWeight:600,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontFamily:F}}>
-              {sub} {d>0&&<span style={{opacity:0.7}}>({d}/{t.length})</span>}
+              {sub} {t.length>0&&<span style={{opacity:0.7}}>({d}/{t.length})</span>}
             </button>;
           })}
         </div>
         <Card style={{marginBottom:16}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <div style={{fontSize:14,fontWeight:700}}>{selSubject}</div>
-            <div style={{fontSize:12,color:pct===100?C.accent:C.muted,fontFamily:M,fontWeight:600}}>{done}/{topics.length} done</div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{fontSize:12,color:pct===100?C.accent:C.muted,fontFamily:M,fontWeight:600}}>{done}/{currentTopics.length}</div>
+              <Btn onClick={()=>setShowAdd(!showAdd)} style={{fontSize:11,padding:"4px 10px"}}>+ Add</Btn>
+            </div>
           </div>
           <div style={{height:6,background:C.border,borderRadius:3,marginBottom:16,overflow:"hidden"}}>
             <div style={{height:"100%",width:`${pct}%`,background:pct===100?C.accent:C.blue,borderRadius:3,transition:"width 0.4s ease"}}/>
           </div>
+          {showAdd&&(
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              <Input placeholder="New topic name" value={newTopic} onChange={e=>setNewTopic(e.target.value)} style={{flex:1}}/>
+              <Btn onClick={addTopic}>Add</Btn>
+              <Btn onClick={()=>setShowAdd(false)} variant="ghost">✕</Btn>
+            </div>
+          )}
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {topics.map(topic=>{
-              const key=`${selSubject}_${topic}`;
-              const done=checked[key];
-              return <div key={topic} onClick={()=>toggle(key)} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:done?C.accentDim:C.surface,borderRadius:10,border:`1px solid ${done?C.accent+"44":C.border}`,cursor:"pointer",transition:"all 0.2s"}}>
-                <div style={{width:20,height:20,borderRadius:6,background:done?C.accent:C.border,border:`1px solid ${done?C.accent:C.muted}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12,color:"#000",fontWeight:700}}>{done?"✓":""}</div>
-                <span style={{fontSize:13,color:done?C.accentText:C.text,textDecoration:done?"line-through":"none"}}>{topic}</span>
-              </div>;
-            })}
+            {currentTopics.map(topic=>(
+              <div key={topic.id}>
+                {editingId===topic.id?(
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <Input value={editText} onChange={e=>setEditText(e.target.value)} style={{flex:1}}/>
+                    <Btn onClick={()=>saveEdit(topic)} style={{fontSize:11,padding:"5px 10px"}}>Save</Btn>
+                    <Btn onClick={()=>setEditingId(null)} variant="ghost" style={{fontSize:11,padding:"5px 8px"}}>✕</Btn>
+                  </div>
+                ):(
+                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:topic.done?C.accentDim:C.surface,borderRadius:10,border:`1px solid ${topic.done?C.accent+"44":C.border}`}}>
+                    <div onClick={()=>toggleDone(topic)} style={{width:20,height:20,borderRadius:6,background:topic.done?C.accent:C.border,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12,color:"#000",fontWeight:700,cursor:"pointer"}}>{topic.done?"✓":""}</div>
+                    <span onClick={()=>toggleDone(topic)} style={{flex:1,fontSize:13,color:topic.done?C.accentText:C.text,textDecoration:topic.done?"line-through":"none",cursor:"pointer"}}>{topic.topic}</span>
+                    <button onClick={()=>{setEditingId(topic.id);setEditText(topic.topic);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:14,padding:"2px 4px"}}>✎</button>
+                    <button onClick={()=>deleteTopic(topic)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:"2px 4px"}}>×</button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </Card>
       </>}
@@ -469,8 +545,8 @@ function StudyGuide({subjects,exams}) {
           {upcomingExams.slice(0,5).map(e=>{
             const d=daysLeft(e.date);
             const subKey=Object.keys(BHMS_TOPICS).find(k=>e.subject.toLowerCase().includes(k.toLowerCase()))||null;
-            const topics=subKey?BHMS_TOPICS[subKey]:[];
-            const pending=topics.filter(t=>!checked[`${subKey}_${t}`]);
+            const subTopics=subKey?(topics[subKey]||[]):[];
+            const pending=subTopics.filter(t=>!t.done);
             const hoursPerDay=pending.length>0&&d>0?Math.ceil((pending.length*0.5)/d):0;
             const urgency=d<=7?C.danger:d<=14?C.warn:C.blue;
             return <Card key={e.id} glow={urgency}>
@@ -487,7 +563,7 @@ function StudyGuide({subjects,exams}) {
               {subKey&&<>
                 <div style={{fontSize:11,color:C.muted,marginBottom:8}}>{pending.length} topics pending · ~{hoursPerDay}h/day recommended</div>
                 <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {pending.slice(0,5).map(t=><span key={t} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:11,color:C.muted}}>{t}</span>)}
+                  {pending.slice(0,5).map(t=><span key={t.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:11,color:C.muted}}>{t.topic}</span>)}
                   {pending.length>5&&<span style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:11,color:C.muted}}>+{pending.length-5} more</span>}
                 </div>
               </>}
@@ -1491,7 +1567,7 @@ export default function App() {
     assignments:<Assignments assignments={assignments} setAssignments={setAssignments} userId={user.id}/>,
     exams:<Exams exams={exams} setExams={setExams} userId={user.id}/>,
     performance:<Performance scores={scores} setScores={setScores} userId={user.id} profile={profile}/>,
-    study:<StudyGuide subjects={subjects} exams={exams}/>,
+    study:<StudyGuide subjects={subjects} exams={exams} userId={user.id}/>,
     ai:<AIChat subjects={subjects} assignments={assignments} exams={exams} scores={scores} profile={profile} attLogs={attLogs} userId={user.id}/>,
     timetable:<Timetable timetable={timetable} setTimetable={setTimetable} userId={user.id} subjects={subjects}/>,
     profile:<Profile profile={profile} setProfile={setProfile} userId={user.id} onLogout={logout}/>,
