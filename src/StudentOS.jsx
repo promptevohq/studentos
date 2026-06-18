@@ -538,7 +538,7 @@ async function saveManualEdit(sub) {
                   <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
   <Btn onClick={()=>markClass(sub,"present")} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accent,fontSize:11,padding:"5px 10px"}}>✓ Present</Btn>
   <Btn onClick={()=>markClass(sub,"absent")} variant="danger" style={{fontSize:11,padding:"5px 10px"}}>✗ Absent</Btn>
-onClick={()=>{setEditingSub(editingSub===sub.id?null:sub.id);setEditVals({attended:sub.attended||0,total:sub.total||0});}}</div>
+  <Btn onClick={()=>{setEditingSub(editingSub===sub.id?null:sub.id);setEditVals({attended:sub.attended||0,total:sub.total||0});}} style={{background:C.blueDim,border:`1px solid ${C.blue}44`,color:C.blue,fontSize:11,padding:"5px 10px"}}>✎ Edit</Btn></div>
 {editingSub===sub.id&&(
   <div style={{display:"flex",gap:8,marginTop:10,alignItems:"flex-end"}}>
     <div style={{flex:1}}>
