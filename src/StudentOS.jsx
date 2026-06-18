@@ -1137,6 +1137,7 @@ function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
   const [showArchived,setShowArchived]=useState(false);
   const bottomRef=useRef(null);
 
+
   useEffect(()=>{loadConversations();},[]);
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
 
@@ -1209,21 +1210,19 @@ Low attendance subjects: ${lowAtt.join(", ")||"None"}
 ASSIGNMENTS: ${pending} pending tasks
 UPCOMING EXAMS: ${upcoming.map(e=>`${e.subject} in ${daysLeft(e.date)} days`).join(", ")||"None"}
 
-BHMS 2nd YEAR SUBJECTS:
-- Organon of Medicine & Homoeopathic Philosophy (Theory + Practical)
-- Materia Medica / HMM (Homoeopathic Materia Medica)
-- Pathology & Microbiology (Theory + Practical)  
-- Forensic Medicine & Toxicology / FMT (Theory + Practical)
-- Surgery including ENT, Eye, Dental (Theory + Practical)
-- Gynaecology & Obstetrics (Theory + Practical)
-- Practice of Medicine / POM (Theory)
-- Repertory (Theory)
-- Yoga & Naturopathy / PT
+ACADEMIC DATA:
+Subjects: ${subjectDetails || "No subjects added"}
 
-NCH RULES: Minimum 75% attendance required. With medical certificate, 65% may be condoned by Principal.
+ATTENDANCE:
+Average: ${avgAtt}%
 
-BHMS MARKING SCHEME: Theory max 150, Practical/Oral max 100, Internal Assessment max 50. Passing: 50% in each.
+ASSIGNMENTS:
+${pending} pending tasks
 
+UPCOMING EXAMS:
+${upcoming.map(e=>`${e.subject}`).join(", ") || "None"}
+
+Only use the student's actual stored data. If information is missing, say it has not been added yet. Do not assume subjects, attendance, college, semester, or academic rules.
 Be helpful, concise, and personalized. You know the student's data. Answer academic questions, help with study plans, explain Homoeopathic concepts, and give attendance/exam advice.`;
   }
 
