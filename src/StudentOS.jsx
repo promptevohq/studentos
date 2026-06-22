@@ -1125,8 +1125,16 @@ function Performance({scores,setScores,userId,profile}) {
   );
 }
 
-function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
-  const [conversations,setConversations]=useState([]);
+function AIChat({
+  subjects,
+  setSubjects,
+  assignments,
+  exams,
+  scores,
+  profile,
+  attLogs,
+  userId
+}) {  const [conversations,setConversations]=useState([]);
   const [activeConv,setActiveConv]=useState(null);
   const [messages,setMessages]=useState([]);
   const [input,setInput]=useState("");
@@ -1274,8 +1282,91 @@ Never generate BHMS subjects unless they exist in the stored data.
         headers:{"Content-Type":"application/json","Authorization":`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13enBmcnJvYWdyaHVlbnBkY2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NzU5NDgsImV4cCI6MjA5NTU1MTk0OH0.1XaAfisI75Iafk_tvGRoQNXDXYTzR7Zqsowl2Fb_dM4`},
         body:JSON.stringify({message:userText,context:buildContext(),history}),
       });
-      const data=await res.json();
-      if(data.reply){
+      const data = await res.json();
+
+try {
+  const action = JSON.parse(data.reply);
+console.log("ACTION =", action);
+if(action.action === "add_subject"){
+
+  const color = SCOLS[subjects.length % SCOLS.length];
+
+  const { data:newSubject, error } = await supabase
+    .from("subjects")
+    .insert({
+      user_id: userId,
+      name: action.name,
+      code: "",
+      attended: 0,
+      total: 0,
+      color
+    })
+    .select()
+    .single();
+
+  if(!error){
+    setSubjects(prev => [...prev, newSubject]);
+    alert("Subject added: " + action.name);
+  }
+
+  return;
+}
+if(action.action === "delete_subject"){
+
+  const subject = subjects.find(
+    s => s.name.toLowerCase() === action.name.toLowerCase()
+  );
+
+  if(subject){
+
+    const { error } = await supabase
+      .from("subjects")
+      .delete()
+      .eq("id", subject.id);
+
+    if(!error){
+      setSubjects(prev =>
+        prev.filter(s => s.id !== subject.id)
+      );
+
+      alert("Subject deleted: " + action.name);
+    }
+  }
+
+  return;
+}
+} catch(err) {}
+try {
+  const action = JSON.parse(data.reply);
+
+  if(action.action === "add_subject"){
+
+    const color = SCOLS[subjects.length % SCOLS.length];
+
+    const { data:newSubject, error } = await supabase
+      .from("subjects")
+      .insert({
+        user_id: userId,
+        name: action.name,
+        code: "",
+        attended: 0,
+        total: 0,
+        color
+      })
+      .select()
+      .single();
+
+    if(!error){
+      setSubjects(prev => [...prev, newSubject]);
+      alert("Subject added: " + action.name);
+    }
+
+    return;
+  }
+} catch(err) {
+  console.log("ACTION ERROR:", err);
+}
+if(data.reply){
         const aiMsg={role:"ai",content:data.reply,conversation_id:activeConv.id,user_id:userId};
         const {data:savedAi}=await supabase.from("ai_messages").insert(aiMsg).select().single();
         setMessages(prev=>[...prev,savedAi]);
@@ -1588,8 +1679,16 @@ export default function App() {
     exams:<Exams exams={exams} setExams={setExams} userId={user.id}/>,
     performance:<Performance scores={scores} setScores={setScores} userId={user.id} profile={profile}/>,
     study:<StudyGuide subjects={subjects} exams={exams} userId={user.id}/>,
-    ai:<AIChat subjects={subjects} assignments={assignments} exams={exams} scores={scores} profile={profile} attLogs={attLogs} userId={user.id}/>,
-    timetable:<Timetable timetable={timetable} setTimetable={setTimetable} userId={user.id} subjects={subjects}/>,
+ai:<AIChat
+  subjects={subjects}
+  setSubjects={setSubjects}
+  assignments={assignments}
+  exams={exams}
+  scores={scores}
+  profile={profile}
+  attLogs={attLogs}
+  userId={user.id}
+/>,    timetable:<Timetable timetable={timetable} setTimetable={setTimetable} userId={user.id} subjects={subjects}/>,
     profile:<Profile profile={profile} setProfile={setProfile} userId={user.id} onLogout={logout}/>,
   };
 
