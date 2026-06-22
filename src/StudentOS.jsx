@@ -1304,11 +1304,15 @@ if(action.action === "add_subject"){
     .select()
     .single();
 
-  if(!error){
-    setSubjects(prev => [...prev, newSubject]);
-    alert("Subject added: " + action.name);
-  }
+if(error){
+  console.error(error);
+  return;
+}
 
+setSubjects(prev => [...prev, newSubject]);
+alert("Subject added: " + action.name);
+console.log("NEW SUBJECT:", newSubject);
+console.log("ERROR:", error);
   return;
 }
 if(action.action === "delete_subject"){
