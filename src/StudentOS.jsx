@@ -833,9 +833,7 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
       {/* Header */}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
         <div>
-          <h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:2}}>Attendance</h2>
-          <div style={{fontSize:13,color:C.muted}}>{totalSubjects} subject{totalSubjects!==1?"s":""} · {goodSubjects}/{totalSubjects} above 75%</div>
-        </div>
+<h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:2,paddingTop:4}}>Attendance</h2>        </div>
         <button onClick={()=>setShowAdd(!showAdd)} style={{
           display:"flex",alignItems:"center",gap:6,
           background:showAdd?C.surface:C.accent,
