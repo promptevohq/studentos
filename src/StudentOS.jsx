@@ -308,90 +308,248 @@ function Dashboard({subjects,assignments,exams,scores,profile,onNav}) {
     const total=sub.total||0; return s+att(sub.attended||0,total);
   },0)/subjects.length):0;
   const pending=assignments.filter(a=>a.status!=="submitted").length;
-  const nextExam=exams.length?[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date))[0]:null;
+  const overdue=assignments.filter(a=>a.status!=="submitted"&&daysLeft(a.due)<0).length;
+  const nextExam=exams.length?[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date)).find(e=>daysLeft(e.date)>=0):null;
   const urgent=assignments.filter(a=>a.status!=="submitted"&&daysLeft(a.due)<=5).sort((a,b)=>daysLeft(a.due)-daysLeft(b.due));
   const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75&&(s.total||0)>0);
-
-  // performance summary
+  const upcomingExams=[...exams].filter(e=>daysLeft(e.date)>=0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4);
   const passedSubjects=scores.filter(s=>{
     const tp=s.theory_max>0?(s.theory_marks/s.theory_max)*100:100;
     const pp=s.practical_max>0?(s.practical_marks/s.practical_max)*100:100;
     return tp>=(s.theory_pass_pct||50)&&pp>=(s.practical_pass_pct||50);
   });
-
   const hour=new Date().getHours();
-  const greet=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+  const greet=hour<5?"Good night":hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+  const greetEmoji=hour<5?"🌙":hour<12?"🌅":hour<17?"☀️":"🌆";
+  const attColor=avgAtt>=75?C.accent:avgAtt>=60?C.warn:C.danger;
+  const attBg=avgAtt>=75?C.accentDim:avgAtt>=60?C.warnDim:C.dangerDim;
 
-  return (
-    <div style={{animation:"fadeUp 0.3s ease"}}>
-      <div style={{marginBottom:24}}>
-        <div className="greeting" style={{fontSize:22,fontWeight:700,letterSpacing:"-0.03em"}}>{greet}, {profile?.name?.split(" ")[0]||"Student"} 👋</div>
-        <div style={{fontSize:13,color:C.muted,marginTop:4}}>{profile?.program||""}{profile?.college?` · ${profile.college}`:""}</div>
+  const StatCard=({label,value,sub,color,bg,icon,onClick,delay=0})=>(
+    <div onClick={onClick} style={{
+      background:`linear-gradient(135deg,${bg} 0%,${C.card} 100%)`,
+      border:`1px solid ${color}33`,borderRadius:20,padding:"18px 16px",
+      cursor:onClick?"pointer":"default",animation:`fadeUp 0.4s ease ${delay}s both`,
+      transition:"transform 0.2s ease,box-shadow 0.2s ease",
+      boxShadow:`0 4px 24px ${color}11`,
+    }}
+    onMouseEnter={e=>{if(onClick){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 32px ${color}22`;}}}
+    onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow=`0 4px 24px ${color}11`;}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+        <div style={{width:36,height:36,borderRadius:10,background:`${color}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{icon}</div>
+        {onClick&&<div style={{fontSize:10,color:color,opacity:0.7}}>→</div>}
       </div>
-      <div className="grid-4" style={{marginBottom:20}}>
-        {[
-          {label:"Attendance",value:`${avgAtt}%`,color:avgAtt>=75?C.accent:C.danger,bg:avgAtt>=75?C.accentDim:C.dangerDim,icon:"◎",nav:"attendance"},
-          {label:"Subjects Passed",value:`${passedSubjects.length}/${scores.length}`,color:C.purple,bg:C.purpleDim,icon:"▲",nav:"performance"},
-          {label:"Pending",value:pending,color:C.warn,bg:C.warnDim,icon:"◷",nav:"assignments"},
-          {label:"Next Exam",value:nextExam?`${daysLeft(nextExam.date)}d`:"—",color:C.blue,bg:C.blueDim,icon:"◈",nav:"exams"},
-        ].map(s=>(
-          <Card key={s.label} onClick={()=>onNav(s.nav)} style={{background:s.bg,border:`1px solid ${s.color}22`,padding:14,cursor:"pointer"}}>
-            <div style={{fontSize:10,color:s.color,fontWeight:600,letterSpacing:"0.05em",textTransform:"uppercase",marginBottom:6}}>{s.icon} {s.label}</div>
-            <div className="stat-value" style={{fontSize:24,fontWeight:700,fontFamily:M,color:s.color}}>{s.value}</div>
-          </Card>
-        ))}
-      </div>
-      <div className="grid-2" style={{marginBottom:16}}>
-        <Card>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <h2 style={{fontSize:14,fontWeight:700}}>Urgent Deadlines</h2>
-            <Btn onClick={()=>onNav("assignments")} variant="ghost" style={{fontSize:11,padding:"4px 10px"}}>See all</Btn>
-          </div>
-          {urgent.length===0?<div style={{color:C.accentText,fontSize:13,padding:"16px 0",textAlign:"center"}}>✓ No urgent deadlines</div>
-            :urgent.slice(0,3).map(a=>{const d=daysLeft(a.due);return(
-              <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`}}>
-                <div><div style={{fontSize:13,fontWeight:500,marginBottom:2}}>{a.title}</div><div style={{fontSize:11,color:C.muted}}>{a.subject}</div></div>
-                <Badge color={d<=2?C.danger:d<=4?C.warn:C.muted} bg={d<=2?C.dangerDim:d<=4?C.warnDim:C.border}>{d===0?"TODAY":d<0?"OVERDUE":`${d}d`}</Badge>
+      <div style={{fontFamily:M,fontSize:26,fontWeight:700,color,lineHeight:1,marginBottom:4}}>{value}</div>
+      <div style={{fontSize:11,color:C.muted,fontWeight:500,textTransform:"uppercase",letterSpacing:"0.06em"}}>{label}</div>
+      {sub&&<div style={{fontSize:11,color,marginTop:4,opacity:0.8}}>{sub}</div>}
+    </div>
+  );
+
+  return(
+    <div style={{animation:"fadeUp 0.3s ease",maxWidth:900}}>
+
+      {/* Hero */}
+      <div style={{
+        background:`linear-gradient(135deg,${C.accentDim} 0%,${C.card} 60%,${C.blueDim} 100%)`,
+        border:`1px solid ${C.border}`,borderRadius:24,padding:"28px 28px 24px",
+        marginBottom:20,position:"relative",overflow:"hidden",
+        animation:"fadeUp 0.3s ease both",
+      }}>
+        <div style={{position:"absolute",top:-40,right:-40,width:180,height:180,borderRadius:"50%",background:`${C.accent}08`,pointerEvents:"none"}}/>
+        <div style={{position:"absolute",bottom:-60,left:-20,width:140,height:140,borderRadius:"50%",background:`${C.blue}08`,pointerEvents:"none"}}/>
+        <div style={{position:"relative"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16}}>
+            <div>
+              <div style={{fontSize:13,color:C.accentText,fontWeight:600,marginBottom:6,letterSpacing:"0.04em"}}>
+                {greetEmoji} {greet}
               </div>
-            );})}
-        </Card>
-        <Card>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <h2 style={{fontSize:14,fontWeight:700}}>Attendance Alerts</h2>
-            <Btn onClick={()=>onNav("attendance")} variant="ghost" style={{fontSize:11,padding:"4px 10px"}}>See all</Btn>
-          </div>
-          {lowAtt.length===0?<div style={{color:C.accentText,fontSize:13,padding:"16px 0",textAlign:"center"}}>✓ All above 75%</div>
-            :lowAtt.map(s=>{const p=att(s.attended||0,s.total||0),needed=Math.ceil((0.75*(s.total||0)-(s.attended||0))/0.25);return(
-              <div key={s.id} style={{padding:"8px 0",borderBottom:`1px solid ${C.border}`}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                  <span style={{fontSize:13,fontWeight:500}}>{s.name}</span>
-                  <span style={{fontFamily:M,fontSize:13,color:C.danger,fontWeight:700}}>{p}%</span>
-                </div>
-                <div style={{fontSize:11,color:C.muted}}>Need <span style={{color:C.warn}}>{needed} more</span> to reach 75%</div>
+              <div style={{fontSize:28,fontWeight:800,letterSpacing:"-0.03em",marginBottom:6,lineHeight:1.1}}>
+                {profile?.name?.split(" ")[0]||"Student"} 👋
               </div>
-            );})}
-        </Card>
-      </div>
-      {exams.length>0&&<Card style={{marginBottom:16}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <h2 style={{fontSize:14,fontWeight:700}}>Upcoming Exams</h2>
-          <Btn onClick={()=>onNav("exams")} variant="ghost" style={{fontSize:11,padding:"4px 10px"}}>See all</Btn>
-        </div>
-        <div className="grid-4-exam">
-          {[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4).map(e=>{const d=daysLeft(e.date);return(
-            <div key={e.id} style={{background:C.surface,borderRadius:12,padding:12,border:`1px solid ${C.border}`}}>
-              <div style={{fontSize:10,color:C.muted,marginBottom:4,textTransform:"uppercase"}}>{e.type}</div>
-              <div style={{fontSize:12,fontWeight:600,marginBottom:6}}>{e.subject}</div>
-              <div style={{fontFamily:M,fontSize:20,fontWeight:700,color:d<=7?C.danger:d<=14?C.warn:C.blue}}>{d}d</div>
-              <div style={{fontSize:10,color:C.muted,marginTop:4}}>{e.date}</div>
+              <div style={{fontSize:13,color:C.muted}}>
+                {profile?.program||"BHMS"}{profile?.college?` · ${profile.college}`:""}{profile?.semester?` · ${profile.semester}`:""}
+              </div>
             </div>
-          );})}
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+              <div style={{position:"relative",width:80,height:80}}>
+                <svg width={80} height={80} style={{transform:"rotate(-90deg)"}}>
+                  <circle cx={40} cy={40} r={32} fill="none" stroke={C.border} strokeWidth={6}/>
+                  <circle cx={40} cy={40} r={32} fill="none" stroke={attColor} strokeWidth={6}
+                    strokeDasharray={2*Math.PI*32}
+                    strokeDashoffset={2*Math.PI*32-(avgAtt/100)*2*Math.PI*32}
+                    strokeLinecap="round" style={{transition:"stroke-dashoffset 1s ease"}}/>
+                </svg>
+                <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                  <div style={{fontFamily:M,fontSize:16,fontWeight:700,color:attColor,lineHeight:1}}>{avgAtt}%</div>
+                  <div style={{fontSize:9,color:C.muted,marginTop:1}}>attend.</div>
+                </div>
+              </div>
+              <div style={{fontSize:10,color:avgAtt>=75?C.accentText:C.danger,fontWeight:600,textAlign:"center"}}>
+                {avgAtt>=75?"✓ On track":"⚠ Below 75%"}
+              </div>
+            </div>
+          </div>
+          {overdue>0&&(
+            <div style={{marginTop:16,padding:"8px 14px",background:`${C.danger}15`,border:`1px solid ${C.danger}33`,borderRadius:10,fontSize:12,color:C.danger,display:"inline-flex",alignItems:"center",gap:6}}>
+              ⚠ {overdue} overdue assignment{overdue>1?"s":""} — check Assignments
+            </div>
+          )}
         </div>
-      </Card>}
+      </div>
+
+      {/* Stat Cards */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:20}}>
+        <StatCard label="Attendance" value={`${avgAtt}%`} color={attColor} bg={attBg} icon="◎"
+          sub={avgAtt<75?`${lowAtt.length} subjects low`:subjects.length>0?"All looking good":"No subjects yet"}
+          onClick={()=>onNav("attendance")} delay={0}/>
+        <StatCard label="Passed" value={`${passedSubjects.length}/${scores.length}`} color={C.purple} bg={C.purpleDim} icon="▲"
+          sub={scores.length>0?`${Math.round((passedSubjects.length/scores.length)*100)||0}% pass rate`:"No scores yet"}
+          onClick={()=>onNav("performance")} delay={0.05}/>
+        <StatCard label="Assignments" value={pending} color={C.warn} bg={C.warnDim} icon="◈"
+          sub={overdue>0?`${overdue} overdue`:pending>0?"In progress":"All done!"}
+          onClick={()=>onNav("assignments")} delay={0.1}/>
+        <StatCard label="Next Exam" value={nextExam?`${daysLeft(nextExam.date)}d`:"—"} color={C.blue} bg={C.blueDim} icon="◷"
+          sub={nextExam?nextExam.subject:"No exams added"}
+          onClick={()=>onNav("exams")} delay={0.15}/>
+      </div>
+
+      {/* Main Grid */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:16}}>
+
+        {/* Upcoming Exams */}
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20,animation:"fadeUp 0.4s ease 0.2s both"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{fontSize:14,fontWeight:700}}>Upcoming Exams</div>
+            <button onClick={()=>onNav("exams")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>See all →</button>
+          </div>
+          {upcomingExams.length===0
+            ?<div style={{textAlign:"center",padding:"24px 0"}}>
+              <div style={{fontSize:28,marginBottom:8}}>📅</div>
+              <div style={{color:C.muted,fontSize:13,marginBottom:12}}>No upcoming exams</div>
+              <button onClick={()=>onNav("exams")} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accent,borderRadius:8,padding:"6px 14px",fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>Add Exam</button>
+            </div>
+            :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {upcomingExams.map((e,i)=>{
+                const d=daysLeft(e.date);
+                const col=d<=7?C.danger:d<=14?C.warn:C.blue;
+                const bg=d<=7?C.dangerDim:d<=14?C.warnDim:C.blueDim;
+                return(
+                  <div key={e.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:bg,borderRadius:12,border:`1px solid ${col}22`}}>
+                    <div style={{textAlign:"center",minWidth:40}}>
+                      <div style={{fontFamily:M,fontSize:20,fontWeight:700,color:col,lineHeight:1}}>{d}</div>
+                      <div style={{fontSize:9,color:C.muted}}>days</div>
+                    </div>
+                    <div style={{width:1,height:32,background:C.border}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:600,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subject}</div>
+                      <div style={{fontSize:11,color:C.muted}}>{e.type} · {e.date}</div>
+                    </div>
+                    <div style={{width:8,height:8,borderRadius:"50%",background:col,flexShrink:0}}/>
+                  </div>
+                );
+              })}
+            </div>}
+        </div>
+
+        {/* Assignments */}
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20,animation:"fadeUp 0.4s ease 0.25s both"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{fontSize:14,fontWeight:700}}>Assignments</div>
+            <button onClick={()=>onNav("assignments")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>See all →</button>
+          </div>
+          {urgent.length===0&&pending===0
+            ?<div style={{textAlign:"center",padding:"24px 0"}}>
+              <div style={{fontSize:28,marginBottom:8}}>✅</div>
+              <div style={{color:C.accentText,fontSize:13,fontWeight:600}}>All caught up!</div>
+              <div style={{color:C.muted,fontSize:12,marginTop:4}}>No pending assignments</div>
+            </div>
+            :urgent.length===0
+            ?<div style={{textAlign:"center",padding:"16px 0"}}>
+              <div style={{color:C.accentText,fontSize:13}}>✓ No urgent deadlines</div>
+              <div style={{color:C.muted,fontSize:12,marginTop:4}}>{pending} assignment{pending!==1?"s":""} in progress</div>
+            </div>
+            :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {urgent.slice(0,4).map(a=>{
+                const d=daysLeft(a.due);
+                const col=d<0?C.danger:d<=2?C.danger:d<=4?C.warn:C.muted;
+                const priCol={high:C.danger,medium:C.warn,low:C.accent};
+                return(
+                  <div key={a.id} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px",background:C.surface,borderRadius:12,border:`1px solid ${C.border}`}}>
+                    <div style={{width:3,height:"100%",minHeight:32,borderRadius:2,background:priCol[a.priority]||C.muted,flexShrink:0}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:500,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.title}</div>
+                      <div style={{fontSize:11,color:C.muted}}>{a.subject}</div>
+                    </div>
+                    <div style={{fontSize:11,color:col,fontWeight:700,fontFamily:M,flexShrink:0}}>
+                      {d<0?"OVERDUE":d===0?"TODAY":`${d}d`}
+                    </div>
+                  </div>
+                );
+              })}
+              {urgent.length>4&&<div style={{fontSize:12,color:C.muted,textAlign:"center",paddingTop:4}}>+{urgent.length-4} more</div>}
+            </div>}
+        </div>
+
+      </div>
+
+      {/* Attendance Alerts */}
+      {lowAtt.length>0&&(
+        <div style={{background:C.card,border:`1px solid ${C.danger}33`,borderRadius:20,padding:20,marginBottom:16,animation:"fadeUp 0.4s ease 0.3s both"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:C.danger,animation:"pulse 1.5s infinite"}}/>
+              <div style={{fontSize:14,fontWeight:700,color:C.danger}}>Attendance Alerts</div>
+            </div>
+            <button onClick={()=>onNav("attendance")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>Fix now →</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+            {lowAtt.map(s=>{
+              const p=att(s.attended||0,s.total||0);
+              const needed=Math.ceil((0.75*(s.total||0)-(s.attended||0))/0.25);
+              return(
+                <div key={s.id} style={{background:C.dangerDim,borderRadius:12,padding:"10px 14px",border:`1px solid ${C.danger}22`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <div style={{fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,paddingRight:8}}>{s.name}</div>
+                    <div style={{fontFamily:M,fontSize:14,fontWeight:700,color:C.danger,flexShrink:0}}>{p}%</div>
+                  </div>
+                  <div style={{height:4,background:`${C.danger}22`,borderRadius:2,marginBottom:6,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${p}%`,background:C.danger,borderRadius:2,transition:"width 0.6s ease"}}/>
+                  </div>
+                  <div style={{fontSize:11,color:C.muted}}>Need <span style={{color:C.warn,fontWeight:600}}>{needed} more</span> class{needed!==1?"es":""} to reach 75%</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Performance Summary */}
+      {scores.length>0&&(
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20,animation:"fadeUp 0.4s ease 0.35s both"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{fontSize:14,fontWeight:700}}>Performance Summary</div>
+            <button onClick={()=>onNav("performance")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>Details →</button>
+          </div>
+          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+            {scores.slice(0,6).map(s=>{
+              const tPct=s.theory_max>0?Math.round((s.theory_marks/s.theory_max)*100):null;
+              const pass=tPct===null||tPct>=(s.theory_pass_pct||50);
+              return(
+                <div key={s.id} style={{flex:"1 1 120px",background:pass?C.accentDim:C.dangerDim,borderRadius:12,padding:"10px 14px",border:`1px solid ${pass?C.accent+"33":C.danger+"33"}`}}>
+                  <div style={{fontSize:12,fontWeight:600,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subject}</div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{fontFamily:M,fontSize:18,fontWeight:700,color:pass?C.accent:C.danger}}>{tPct!==null?`${tPct}%`:"—"}</div>
+                    <div style={{fontSize:10,color:pass?C.accentText:C.danger,fontWeight:600}}>{pass?"PASS":"FAIL"}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
-
 // ── Study Guide ───────────────────────────────────────────────────────────────
 const BHMS_TOPICS = {
   "Organon": ["Aphorisms 1-10","Aphorisms 11-20","Aphorisms 21-30","Philosophy of Homoeopathy","Vital Force","Disease Classification","Drug Proving","Posology","Case Taking","Miasms"],
