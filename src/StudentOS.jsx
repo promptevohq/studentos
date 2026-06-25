@@ -740,9 +740,9 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
   const [duration,setDuration]=useState("overall");
   const [customFrom,setCustomFrom]=useState("");
   const [customTo,setCustomTo]=useState("");
-const [editingSub,setEditingSub]=useState(null);
-const [editVals,setEditVals]=useState({attended:"",total:""});
-  // compute date range
+  const [editingSub,setEditingSub]=useState(null);
+  const [editVals,setEditVals]=useState({attended:"",total:""});
+
   function getRange() {
     const now=new Date(); now.setHours(23,59,59,999);
     const from=new Date();
@@ -750,7 +750,7 @@ const [editVals,setEditVals]=useState({attended:"",total:""});
     else if(duration==="monthly"){from.setMonth(now.getMonth()-1);}
     else if(duration==="quarterly"){from.setMonth(now.getMonth()-3);}
     else if(duration==="custom"&&customFrom&&customTo){return {from:new Date(customFrom),to:new Date(customTo)};}
-    else{return null;} // overall
+    else{return null;}
     from.setHours(0,0,0,0);
     return {from,to:now};
   }
@@ -774,13 +774,13 @@ const [editVals,setEditVals]=useState({attended:"",total:""});
     }
   }
 
-async function saveManualEdit(sub) {
-  const attended=parseInt(editVals.attended)||0;
-  const total=parseInt(editVals.total)||0;
-  await supabase.from("subjects").update({attended,total}).eq("id",sub.id);
-  setSubjects(prev=>prev.map(s=>s.id===sub.id?{...s,attended,total}:s));
-  setEditingSub(null);
-}  
+  async function saveManualEdit(sub) {
+    const attended=parseInt(editVals.attended)||0;
+    const total=parseInt(editVals.total)||0;
+    await supabase.from("subjects").update({attended,total}).eq("id",sub.id);
+    setSubjects(prev=>prev.map(s=>s.id===sub.id?{...s,attended,total}:s));
+    setEditingSub(null);
+  }
 
   async function addSubject() {
     if(!newS.name) return;
@@ -788,6 +788,7 @@ async function saveManualEdit(sub) {
     const {data,error}=await supabase.from("subjects").insert({user_id:userId,...newS,attended:0,total:0,color}).select().single();
     if(!error){setSubjects(prev=>[...prev,data]);setNewS({name:"",code:""});setShowAdd(false);}
   }
+
   async function deleteSubject(id) {
     await supabase.from("subjects").delete().eq("id",id);
     await supabase.from("attendance_log").delete().eq("subject_id",id);
@@ -795,6 +796,319 @@ async function saveManualEdit(sub) {
     setAttLogs(prev=>prev.filter(l=>l.subject_id!==id));
   }
 
+  function buildChartData(sub) {
+    const logs=attLogs.filter(l=>l.subject_id===sub.id);
+    if(logs.length===0) return [];
+    if(duration==="weekly"){
+      const days=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+      return days.map((d,i)=>{
+        const date=new Date(); date.setDate(date.getDate()-date.getDay()+i+1);
+        const ds=date.toISOString().split("T")[0];
+        const dayLogs=logs.filter(l=>l.date===ds);
+        return {label:d,value:dayLogs.length>0?Math.round((dayLogs.filter(l=>l.status==="present").length/dayLogs.length)*100):0};
+      });
+    }
+    if(duration==="monthly"||duration==="quarterly"){
+      const weeks=duration==="monthly"?4:12;
+      return Array.from({length:weeks},(_,i)=>{
+        const to=new Date(); to.setDate(to.getDate()-i*7);
+        const from=new Date(to); from.setDate(from.getDate()-6);
+        const wLogs=logs.filter(l=>{const d=new Date(l.date);return d>=from&&d<=to;});
+        return {label:`W${weeks-i}`,value:wLogs.length>0?Math.round((wLogs.filter(l=>l.status==="present").length/wLogs.length)*100):0};
+      }).reverse();
+    }
+    return [];
+  }
+
+  const showChart=duration!=="overall"&&duration!=="custom";
+  const durations=["overall","weekly","monthly","quarterly","custom"];
+
+  // Overall stats
+  const totalSubjects=subjects.length;
+  const goodSubjects=subjects.filter(s=>att(s.attended||0,s.total||0)>=75).length;
+  const avgAttendance=subjects.length?Math.round(subjects.reduce((s,sub)=>s+att(sub.attended||0,sub.total||0),0)/subjects.length):0;
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease",maxWidth:900}}>
+
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div>
+          <h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:2}}>Attendance</h2>
+          <div style={{fontSize:13,color:C.muted}}>{totalSubjects} subject{totalSubjects!==1?"s":""} · {goodSubjects}/{totalSubjects} above 75%</div>
+        </div>
+        <button onClick={()=>setShowAdd(!showAdd)} style={{
+          display:"flex",alignItems:"center",gap:6,
+          background:showAdd?C.surface:C.accent,
+          border:`1px solid ${showAdd?C.border:C.accent}`,
+          color:showAdd?C.muted:"#000",
+          padding:"9px 16px",borderRadius:12,fontSize:13,fontWeight:700,
+          cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
+        }}>
+          {showAdd?"✕ Cancel":"+ Subject"}
+        </button>
+      </div>
+
+      {/* Summary strip */}
+      {subjects.length>0&&(
+        <div style={{
+          display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20,
+          animation:"fadeUp 0.3s ease 0.05s both",
+        }}>
+          {[
+            {label:"Avg Attendance",value:`${avgAttendance}%`,color:avgAttendance>=75?C.accent:C.danger,bg:avgAttendance>=75?C.accentDim:C.dangerDim},
+            {label:"Subjects OK",value:`${goodSubjects}/${totalSubjects}`,color:C.blue,bg:C.blueDim},
+            {label:"Need Attention",value:totalSubjects-goodSubjects,color:totalSubjects-goodSubjects>0?C.warn:C.accent,bg:totalSubjects-goodSubjects>0?C.warnDim:C.accentDim},
+          ].map(s=>(
+            <div key={s.label} style={{background:s.bg,border:`1px solid ${s.color}22`,borderRadius:14,padding:"12px 14px"}}>
+              <div style={{fontFamily:M,fontSize:22,fontWeight:700,color:s.color,lineHeight:1,marginBottom:4}}>{s.value}</div>
+              <div style={{fontSize:11,color:C.muted,fontWeight:500,textTransform:"uppercase",letterSpacing:"0.05em"}}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add Subject Form */}
+      {showAdd&&(
+        <div style={{
+          background:C.surface,border:`1px solid ${C.accent}44`,borderRadius:16,
+          padding:20,marginBottom:20,animation:"fadeUp 0.2s ease both",
+        }}>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:14,color:C.accentText}}>Add New Subject</div>
+          <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+            <input placeholder="Subject name" value={newS.name} onChange={e=>setNewS(p=>({...p,name:e.target.value}))}
+              onKeyDown={e=>e.key==="Enter"&&addSubject()}
+              style={{flex:"2 1 160px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
+            <input placeholder="Code (optional)" value={newS.code} onChange={e=>setNewS(p=>({...p,code:e.target.value}))}
+              style={{flex:"1 1 100px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={addSubject} style={{background:C.accent,border:"none",color:"#000",padding:"9px 20px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Subject</button>
+            <button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"9px 16px",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F}}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Duration Selector */}
+      <div style={{
+        display:"flex",gap:4,marginBottom:20,padding:4,
+        background:C.surface,borderRadius:14,border:`1px solid ${C.border}`,
+        overflowX:"auto",flexShrink:0,
+      }}>
+        {durations.map(d=>(
+          <button key={d} onClick={()=>setDuration(d)} style={{
+            flex:"0 0 auto",padding:"7px 16px",
+            background:duration===d?C.accent:"transparent",
+            border:"none",
+            color:duration===d?"#000":C.muted,
+            fontSize:12,fontWeight:duration===d?700:500,
+            borderRadius:10,cursor:"pointer",fontFamily:F,
+            textTransform:"capitalize",whiteSpace:"nowrap",
+            transition:"all 0.2s ease",
+          }}>{d}</button>
+        ))}
+      </div>
+
+      {/* Custom Range */}
+      {duration==="custom"&&(
+        <div style={{
+          display:"flex",gap:10,flexWrap:"wrap",marginBottom:20,
+          padding:16,background:C.surface,borderRadius:14,border:`1px solid ${C.border}`,
+        }}>
+          <div style={{flex:1,minWidth:140}}>
+            <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>From</div>
+            <input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}
+              style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
+          </div>
+          <div style={{flex:1,minWidth:140}}>
+            <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>To</div>
+            <input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)}
+              style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
+          </div>
+        </div>
+      )}
+
+      {/* Subject List */}
+      {subjects.length===0
+        ?<div style={{
+          textAlign:"center",padding:"60px 20px",
+          background:C.card,border:`1px solid ${C.border}`,borderRadius:20,
+        }}>
+          <div style={{fontSize:48,marginBottom:16}}>📚</div>
+          <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>No subjects yet</div>
+          <div style={{fontSize:13,color:C.muted,marginBottom:20}}>Add your first subject to start tracking attendance</div>
+          <button onClick={()=>setShowAdd(true)} style={{background:C.accent,border:"none",color:"#000",padding:"10px 24px",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Subject</button>
+        </div>
+        :<div style={{display:"flex",flexDirection:"column",gap:14}}>
+          {subjects.map((sub,idx)=>{
+            const {attended,total}=subjectStats(sub);
+            const p=att(attended,total);
+            const needed=p<75&&total>0?Math.ceil((0.75*total-attended)/0.25):0;
+            const canMiss=p>=75&&total>0?Math.floor((attended-0.75*total)/0.75):0;
+            const chartData=showChart?buildChartData(sub):[];
+            const isLow=p<75&&total>0;
+            const col=sub.color||SCOLS[idx%SCOLS.length];
+            const statusColor=p>=75?C.accent:p>=60?C.warn:C.danger;
+
+            return(
+              <div key={sub.id} style={{
+                background:C.card,
+                border:`1px solid ${isLow?C.danger+"44":C.border}`,
+                borderRadius:20,overflow:"hidden",
+                boxShadow:isLow?`0 0 20px ${C.danger}11`:"none",
+                animation:`fadeUp 0.3s ease ${idx*0.05}s both`,
+                transition:"box-shadow 0.2s ease",
+              }}>
+                {/* Top accent line */}
+                <div style={{height:3,background:`linear-gradient(90deg,${col} ${p}%,${C.border} ${p}%)`,transition:"background 0.6s ease"}}/>
+
+                <div style={{padding:20}}>
+                  {/* Subject header */}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <div style={{
+                        width:44,height:44,borderRadius:12,
+                        background:`${col}22`,border:`1px solid ${col}44`,
+                        display:"flex",alignItems:"center",justifyContent:"center",
+                        fontSize:18,fontWeight:700,color:col,flexShrink:0,
+                      }}>
+                        {sub.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>{sub.name}
+                          {sub.code&&<span style={{color:C.muted,fontSize:11,fontFamily:M,marginLeft:8,fontWeight:400}}>{sub.code}</span>}
+                        </div>
+                        <div style={{fontSize:12,color:C.muted}}>
+                          {attended}/{total} classes
+                          {duration!=="overall"&&<span style={{color:col,marginLeft:4}}>({duration})</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontFamily:M,fontSize:22,fontWeight:700,color:statusColor,lineHeight:1}}>{p}%</div>
+                        <div style={{fontSize:10,color:statusColor,marginTop:2,fontWeight:600}}>
+                          {p>=75?"✓ Good":p>=60?"⚠ Low":"✗ Critical"}
+                        </div>
+                      </div>
+                      <button onClick={()=>deleteSubject(sub.id)} style={{
+                        background:"none",border:"none",color:C.muted,cursor:"pointer",
+                        fontSize:18,lineHeight:1,padding:"4px",borderRadius:6,
+                        transition:"color 0.2s",
+                      }}
+                      onMouseEnter={e=>e.currentTarget.style.color=C.danger}
+                      onMouseLeave={e=>e.currentTarget.style.color=C.muted}>×</button>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div style={{marginBottom:14}}>
+                    <div style={{height:6,background:C.border,borderRadius:3,overflow:"hidden",marginBottom:6}}>
+                      <div style={{
+                        height:"100%",
+                        width:`${Math.min(p,100)}%`,
+                        background:`linear-gradient(90deg,${statusColor},${col})`,
+                        borderRadius:3,transition:"width 0.6s ease",
+                      }}/>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.muted}}>
+                      <span>0%</span>
+                      <span style={{color:statusColor,fontWeight:600}}>
+                        {p<75?`Need ${needed} more class${needed!==1?"es":""} for 75%`:`Can miss ${canMiss} more class${canMiss!==1?"es":""}`}
+                      </span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button onClick={()=>markClass(sub,"present")} style={{
+                      flex:"1 1 80px",padding:"10px 14px",
+                      background:C.accentDim,border:`1px solid ${C.accent}44`,
+                      color:C.accent,borderRadius:12,fontSize:12,fontWeight:700,
+                      cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
+                    }}
+                    onMouseEnter={e=>{e.currentTarget.style.background=C.accent;e.currentTarget.style.color="#000";}}
+                    onMouseLeave={e=>{e.currentTarget.style.background=C.accentDim;e.currentTarget.style.color=C.accent;}}>
+                      ✓ Present
+                    </button>
+                    <button onClick={()=>markClass(sub,"absent")} style={{
+                      flex:"1 1 80px",padding:"10px 14px",
+                      background:C.dangerDim,border:`1px solid ${C.danger}44`,
+                      color:C.danger,borderRadius:12,fontSize:12,fontWeight:700,
+                      cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
+                    }}
+                    onMouseEnter={e=>{e.currentTarget.style.background=C.danger;e.currentTarget.style.color="#000";}}
+                    onMouseLeave={e=>{e.currentTarget.style.background=C.dangerDim;e.currentTarget.style.color=C.danger;}}>
+                      ✗ Absent
+                    </button>
+                    <button onClick={()=>{setEditingSub(editingSub===sub.id?null:sub.id);setEditVals({attended:sub.attended||0,total:sub.total||0});}} style={{
+                      padding:"10px 14px",
+                      background:editingSub===sub.id?C.blueDim:"none",
+                      border:`1px solid ${C.border}`,
+                      color:editingSub===sub.id?C.blue:C.muted,
+                      borderRadius:12,fontSize:12,fontWeight:600,
+                      cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
+                    }}>✎ Edit</button>
+                  </div>
+
+                  {/* Manual edit form */}
+                  {editingSub===sub.id&&(
+                    <div style={{
+                      marginTop:14,padding:16,
+                      background:C.surface,borderRadius:12,
+                      border:`1px solid ${C.blue}33`,
+                      animation:"fadeUp 0.2s ease both",
+                    }}>
+                      <div style={{fontSize:12,color:C.blue,fontWeight:600,marginBottom:12,textTransform:"uppercase",letterSpacing:"0.05em"}}>Manual Edit</div>
+                      <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
+                        <div style={{flex:1,minWidth:80}}>
+                          <div style={{fontSize:11,color:C.muted,marginBottom:6}}>Classes Attended</div>
+                          <input type="number" value={editVals.attended} onChange={e=>setEditVals(p=>({...p,attended:e.target.value}))}
+                            style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:14,fontFamily:M,fontWeight:700,outline:"none",textAlign:"center"}}/>
+                        </div>
+                        <div style={{color:C.muted,fontSize:18,paddingBottom:8}}>/</div>
+                        <div style={{flex:1,minWidth:80}}>
+                          <div style={{fontSize:11,color:C.muted,marginBottom:6}}>Total Classes</div>
+                          <input type="number" value={editVals.total} onChange={e=>setEditVals(p=>({...p,total:e.target.value}))}
+                            style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:14,fontFamily:M,fontWeight:700,outline:"none",textAlign:"center"}}/>
+                        </div>
+                        <button onClick={()=>saveManualEdit(sub)} style={{
+                          padding:"10px 20px",background:C.blue,border:"none",
+                          color:"#000",borderRadius:10,fontSize:13,fontWeight:700,
+                          cursor:"pointer",fontFamily:F,flexShrink:0,
+                        }}>Save</button>
+                        <button onClick={()=>setEditingSub(null)} style={{
+                          padding:"10px 14px",background:"none",border:`1px solid ${C.border}`,
+                          color:C.muted,borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F,
+                        }}>✕</button>
+                      </div>
+                      {editVals.attended&&editVals.total&&(
+                        <div style={{marginTop:10,fontSize:12,color:C.muted}}>
+                          Preview: <span style={{color:att(parseInt(editVals.attended),parseInt(editVals.total))>=75?C.accent:C.danger,fontWeight:700}}>
+                            {att(parseInt(editVals.attended)||0,parseInt(editVals.total)||0)}%
+                          </span>
+                          {att(parseInt(editVals.attended)||0,parseInt(editVals.total)||0)>=75?" ✓ Will be above 75%":" ✗ Still below 75%"}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Chart */}
+                  {showChart&&chartData.length>0&&(
+                    <div style={{marginTop:16,paddingTop:16,borderTop:`1px solid ${C.border}`}}>
+                      <div style={{fontSize:11,color:C.muted,marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600}}>{duration} trend</div>
+                      <BarChart data={chartData} color={col} height={90}/>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>}
+    </div>
+  );
+}
   // build chart data for selected range per subject
   function buildChartData(sub) {
     const logs=attLogs.filter(l=>l.subject_id===sub.id);
@@ -908,7 +1222,7 @@ async function saveManualEdit(sub) {
         </div>}
     </div>
   );
-}
+
 
 // ── Assignments ───────────────────────────────────────────────────────────────
 function Assignments({assignments,setAssignments,userId}) {
