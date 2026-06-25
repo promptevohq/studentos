@@ -147,16 +147,8 @@ function Auth({onAuth}) {
     setLoading(true);setErr("");
     const {error}=await supabase.from("profiles").upsert({id:uid,name,college,program,semester});
     if(error){setErr(error.message);setLoading(false);return;}
-    const { data: { user } } = await supabase.auth.getUser();
-
-if (!user) {
-  setErr("Please sign up or log in again.");
-  setLoading(false);
-  return;
-}
-
-onAuth(user);
-setLoading(false);
+    const {data:{user}}=await supabase.auth.getUser();
+    onAuth(user);
   }
   async function forgotPassword() {
     if(!email){setErr("Enter your email first");return;}
@@ -1012,11 +1004,14 @@ function Performance({scores,setScores,userId,profile}) {
       {/* Add form */}
       {showAdd&&<Card style={{marginBottom:16,background:C.surface}}>
         <div style={{fontSize:13,fontWeight:600,marginBottom:12}}>Add Score Record</div>
-        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}> <Input placeholder="Exam type (e.g. Internal, Midterm, Sessional 1...)" 
-  value={newS.exam_type} 
-  onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))} 
-  style={{flex:"1 1 140px"}}
-/>
+        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+          <Input placeholder="Subject" value={newS.subject} onChange={e=>setNewS(p=>({...p,subject:e.target.value}))} style={{flex:"2 1 140px"}}/>
+          <Select value={["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)?newS.exam_type:"Custom"} onChange={e=>{if(e.target.value==="Custom"){setNewS(p=>({...p,exam_type:""}))}else{setNewS(p=>({...p,exam_type:e.target.value}));}}} style={{flex:"1 1 100px"}}>
+            <option>Internal</option><option>Midterm</option><option>Final</option><option>Practical</option><option>Viva</option><option value="Custom">Custom</option>
+          </Select>
+          {!["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)&&(
+            <Input placeholder="Exam name (e.g. Sessional 1)" value={newS.exam_type} onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))} style={{flex:"2 1 140px"}}/>
+          )}
           <Input type="date" value={newS.date} onChange={e=>setNewS(p=>({...p,date:e.target.value}))} style={{flex:"1 1 120px"}}/>
         </div>
         {/* Theory */}
@@ -1125,16 +1120,8 @@ function Performance({scores,setScores,userId,profile}) {
   );
 }
 
-function AIChat({
-  subjects,
-  setSubjects,
-  assignments,
-  exams,
-  scores,
-  profile,
-  attLogs,
-  userId
-}) {  const [conversations,setConversations]=useState([]);
+function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
+  const [conversations,setConversations]=useState([]);
   const [activeConv,setActiveConv]=useState(null);
   const [messages,setMessages]=useState([]);
   const [input,setInput]=useState("");
@@ -1144,7 +1131,6 @@ function AIChat({
   const [newTitle,setNewTitle]=useState("");
   const [showArchived,setShowArchived]=useState(false);
   const bottomRef=useRef(null);
-
 
   useEffect(()=>{loadConversations();},[]);
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
@@ -1197,19 +1183,20 @@ function AIChat({
   }
 
   function buildContext() {
-
     const avgAtt=subjects.length?Math.round(subjects.reduce((s,sub)=>s+att(sub.attended||0,sub.total||0),0)/subjects.length):0;
     const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75).map(s=>s.name);
     const pending=assignments.filter(a=>a.status!=="submitted").length;
     const upcoming=exams.filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,3);
-  const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
+    const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
+    return `You are an academic AI assistant built into StudentOS — a web app for BHMS students at Monark Homoeopathic Medical College, Vahelal, Ahmedabad (Monark University).
 
-return `
 ABOUT StudentOS:
-StudentOS is a free academic management platform for all students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
+StudentOS is a free academic management platform for BHMS students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
+
 STUDENT PROFILE:
-Name: ${profile?.name || "Student"}
-Program: ${profile?.program || "Not specified"} | Semester: ${profile?.semester || "Not specified"} | College: ${profile?.college || "Not specified"}
+Name: ${profile?.name||"Student"}
+Program: ${profile?.program||"BHMS"} | Semester: ${profile?.semester||"2nd BHMS"} | College: ${profile?.college||"Monark Homoeopathic Medical College"}
+
 CURRENT ATTENDANCE:
 Average: ${avgAtt}% ${avgAtt<75?"⚠️ BELOW 75% - CRITICAL":"✓ Good"}
 ${subjectDetails}
@@ -1218,38 +1205,23 @@ Low attendance subjects: ${lowAtt.join(", ")||"None"}
 ASSIGNMENTS: ${pending} pending tasks
 UPCOMING EXAMS: ${upcoming.map(e=>`${e.subject} in ${daysLeft(e.date)} days`).join(", ")||"None"}
 
-ACADEMIC DATA:
-Subjects: ${subjectDetails || "No subjects added"}
+BHMS 2nd YEAR SUBJECTS:
+- Organon of Medicine & Homoeopathic Philosophy (Theory + Practical)
+- Materia Medica / HMM (Homoeopathic Materia Medica)
+- Pathology & Microbiology (Theory + Practical)  
+- Forensic Medicine & Toxicology / FMT (Theory + Practical)
+- Surgery including ENT, Eye, Dental (Theory + Practical)
+- Gynaecology & Obstetrics (Theory + Practical)
+- Practice of Medicine / POM (Theory)
+- Repertory (Theory)
+- Yoga & Naturopathy / PT
 
-ATTENDANCE:
-Average: ${avgAtt}%
+NCH RULES: Minimum 75% attendance required. With medical certificate, 65% may be condoned by Principal.
 
-ASSIGNMENTS:
-${pending} pending tasks
+BHMS MARKING SCHEME: Theory max 150, Practical/Oral max 100, Internal Assessment max 50. Passing: 50% in each.
 
-UPCOMING EXAMS:
-${upcoming.map(e=>`${e.subject}`).join(", ") || "None"}
-
-AI RULES:
-- Answer using the student's actual data from this context.
-- If asked what to study next, prioritize:
-  1. Upcoming exams
-  2. Low attendance subjects
-  3. Subjects with low scores
-- Create practical study plans when requested.
-- Create daily, weekly, or exam preparation schedules when requested.
-- Never invent subjects that do not exist in the student's profile.
-- Use attendance, assignments, exams, and scores to give recommendations.
-
-Only use the student's actual stored data. If information is missing, say it has not been added yet. Do not assume subjects, attendance, college, semester, or academic rules.
-Be helpful, concise, and personalized. You know the student's data. Answer academic questions, help with study plans, explain concepts from the student's actual course only, and give attendance and exam advice.
-
-Never assume a course, subjects, syllabus, or academic program.
-Only use data stored in the profile, subjects, assignments, exams, and attendance.
-If subjects are empty, say "No subjects have been added yet."
-Never generate BHMS subjects unless they exist in the stored data.
-`;
-}
+Be helpful, concise, and personalized. You know the student's data. Answer academic questions, help with study plans, explain Homoeopathic concepts, and give attendance/exam advice.`;
+  }
 
   async function send() {
     if(!input.trim()||loading) return;
@@ -1282,95 +1254,8 @@ Never generate BHMS subjects unless they exist in the stored data.
         headers:{"Content-Type":"application/json","Authorization":`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13enBmcnJvYWdyaHVlbnBkY2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NzU5NDgsImV4cCI6MjA5NTU1MTk0OH0.1XaAfisI75Iafk_tvGRoQNXDXYTzR7Zqsowl2Fb_dM4`},
         body:JSON.stringify({message:userText,context:buildContext(),history}),
       });
-      const data = await res.json();
-
-try {
-  const action = JSON.parse(data.reply);
-console.log("ACTION =", action);
-if(action.action === "add_subject"){
-
-  const color = SCOLS[subjects.length % SCOLS.length];
-
-  const { data:newSubject, error } = await supabase
-    .from("subjects")
-    .insert({
-      user_id: userId,
-      name: action.name,
-      code: "",
-      attended: 0,
-      total: 0,
-      color
-    })
-    .select()
-    .single();
-
-if(error){
-  console.error(error);
-  return;
-}
-
-setSubjects(prev => [...prev, newSubject]);
-alert("Subject added: " + action.name);
-console.log("NEW SUBJECT:", newSubject);
-console.log("ERROR:", error);
-  return;
-}
-if(action.action === "delete_subject"){
-
-  const subject = subjects.find(
-    s => s.name.toLowerCase() === action.name.toLowerCase()
-  );
-
-  if(subject){
-
-    const { error } = await supabase
-      .from("subjects")
-      .delete()
-      .eq("id", subject.id);
-
-    if(!error){
-      setSubjects(prev =>
-        prev.filter(s => s.id !== subject.id)
-      );
-
-      alert("Subject deleted: " + action.name);
-    }
-  }
-
-  return;
-}
-} catch(err) {}
-try {
-  const action = JSON.parse(data.reply);
-
-  if(action.action === "add_subject"){
-
-    const color = SCOLS[subjects.length % SCOLS.length];
-
-    const { data:newSubject, error } = await supabase
-      .from("subjects")
-      .insert({
-        user_id: userId,
-        name: action.name,
-        code: "",
-        attended: 0,
-        total: 0,
-        color
-      })
-      .select()
-      .single();
-
-    if(!error){
-      setSubjects(prev => [...prev, newSubject]);
-      alert("Subject added: " + action.name);
-    }
-
-    return;
-  }
-} catch(err) {
-  console.log("ACTION ERROR:", err);
-}
-if(data.reply){
+      const data=await res.json();
+      if(data.reply){
         const aiMsg={role:"ai",content:data.reply,conversation_id:activeConv.id,user_id:userId};
         const {data:savedAi}=await supabase.from("ai_messages").insert(aiMsg).select().single();
         setMessages(prev=>[...prev,savedAi]);
@@ -1385,7 +1270,7 @@ if(data.reply){
 
   const activeConvs=conversations.filter(c=>!c.archived);
   const archivedConvs=conversations.filter(c=>c.archived);
-  const quickPrompts=["Analyze my attendance","What should I study next?","Explain a diffucult topics","Create a study plan"];
+  const quickPrompts=["Analyze my attendance","What should I study next?","Explain Organon basics","Create a study plan"];
 
   return (
     <div style={{animation:"fadeUp 0.3s ease",display:"flex",gap:12,height:"calc(100vh - 120px)"}}>
@@ -1683,16 +1568,8 @@ export default function App() {
     exams:<Exams exams={exams} setExams={setExams} userId={user.id}/>,
     performance:<Performance scores={scores} setScores={setScores} userId={user.id} profile={profile}/>,
     study:<StudyGuide subjects={subjects} exams={exams} userId={user.id}/>,
-ai:<AIChat
-  subjects={subjects}
-  setSubjects={setSubjects}
-  assignments={assignments}
-  exams={exams}
-  scores={scores}
-  profile={profile}
-  attLogs={attLogs}
-  userId={user.id}
-/>,    timetable:<Timetable timetable={timetable} setTimetable={setTimetable} userId={user.id} subjects={subjects}/>,
+    ai:<AIChat subjects={subjects} assignments={assignments} exams={exams} scores={scores} profile={profile} attLogs={attLogs} userId={user.id}/>,
+    timetable:<Timetable timetable={timetable} setTimetable={setTimetable} userId={user.id} subjects={subjects}/>,
     profile:<Profile profile={profile} setProfile={setProfile} userId={user.id} onLogout={logout}/>,
   };
 
