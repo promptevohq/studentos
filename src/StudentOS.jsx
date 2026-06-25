@@ -733,7 +733,6 @@ function StudyGuide({subjects,exams,userId}) {
   );
 }
 
-// ── Attendance (date-based logging) ───────────────────────────────────────────
 function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
   const [showAdd,setShowAdd]=useState(false);
   const [newS,setNewS]=useState({name:"",code:""});
@@ -1109,119 +1108,6 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
     </div>
   );
 }
-  // build chart data for selected range per subject
-  function buildChartData(sub) {
-    const logs=attLogs.filter(l=>l.subject_id===sub.id);
-    if(logs.length===0) return [];
-    if(duration==="weekly"){
-      const days=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-      return days.map((d,i)=>{
-        const date=new Date(); date.setDate(date.getDate()-date.getDay()+i+1);
-        const ds=date.toISOString().split("T")[0];
-        const dayLogs=logs.filter(l=>l.date===ds);
-        return {label:d,value:dayLogs.length>0?Math.round((dayLogs.filter(l=>l.status==="present").length/dayLogs.length)*100):0};
-      });
-    }
-    if(duration==="monthly"||duration==="quarterly"){
-      const weeks=duration==="monthly"?4:12;
-      return Array.from({length:weeks},(_,i)=>{
-        const to=new Date(); to.setDate(to.getDate()-i*7);
-        const from=new Date(to); from.setDate(from.getDate()-6);
-        const wLogs=logs.filter(l=>{const d=new Date(l.date);return d>=from&&d<=to;});
-        return {label:`W${weeks-i}`,value:wLogs.length>0?Math.round((wLogs.filter(l=>l.status==="present").length/wLogs.length)*100):0};
-      }).reverse();
-    }
-    return [];
-  }
-
-  const showChart=duration!=="overall"&&duration!=="custom";
-
-  return (
-    <div style={{animation:"fadeUp 0.3s ease"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>Attendance</h2>
-        <Btn onClick={()=>setShowAdd(!showAdd)}>+ Subject</Btn>
-      </div>
-
-      {/* Duration selector */}
-      <div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
-        {["overall","weekly","monthly","quarterly","custom"].map(d=>(
-          <button key={d} onClick={()=>setDuration(d)} style={{flex:"0 0 auto",padding:"7px 14px",background:duration===d?C.accent:C.card,border:`1px solid ${duration===d?C.accent:C.border}`,color:duration===d?"#000":C.muted,fontSize:11,fontWeight:600,borderRadius:8,cursor:"pointer",fontFamily:F,textTransform:"capitalize",whiteSpace:"nowrap"}}>
-            {d}
-          </button>
-        ))}
-      </div>
-      {duration==="custom"&&(
-        <Card style={{marginBottom:16,background:C.surface,padding:14}}>
-          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:11,color:C.muted,marginBottom:4}}>From</div>
-              <Input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)} style={{width:"100%"}}/>
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontSize:11,color:C.muted,marginBottom:4}}>To</div>
-              <Input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)} style={{width:"100%"}}/>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {showAdd&&<Card style={{marginBottom:16,background:C.surface}}>
-        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
-          <Input placeholder="Subject name" value={newS.name} onChange={e=>setNewS(p=>({...p,name:e.target.value}))} style={{flex:"2 1 140px"}}/>
-          <Input placeholder="Code" value={newS.code} onChange={e=>setNewS(p=>({...p,code:e.target.value}))} style={{flex:"1 1 80px"}}/>
-        </div>
-        <div style={{display:"flex",gap:8}}><Btn onClick={addSubject}>Add</Btn><Btn onClick={()=>setShowAdd(false)} variant="ghost">Cancel</Btn></div>
-      </Card>}
-
-      {subjects.length===0
-        ?<Card style={{textAlign:"center",padding:48}}><div style={{fontSize:32,marginBottom:12}}>📚</div><div style={{color:C.muted,fontSize:14}}>No subjects yet. Add one to start tracking.</div></Card>
-        :<div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {subjects.map(sub=>{
-            const {attended,total}=subjectStats(sub);
-            const p=att(attended,total);
-            const needed=p<75&&total>0?Math.ceil((0.75*total-attended)/0.25):0;
-            const canMiss=p>=75&&total>0?Math.floor((attended-0.75*total)/0.75):0;
-            const chartData=showChart?buildChartData(sub):[];
-            return <Card key={sub.id} glow={sub.color}>
-              <div className="att-card" style={{position:"relative"}}>
-                <button onClick={()=>deleteSubject(sub.id)} style={{position:"absolute",top:-8,right:-8,background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:18,lineHeight:1}}>×</button>
-                <Ring p={p} size={72} color={sub.color}/>
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:14,fontWeight:600,marginBottom:2}}>{sub.name}{sub.code&&<span style={{color:C.muted,fontSize:11,fontFamily:M,marginLeft:6}}>{sub.code}</span>}</div>
-                  <div style={{fontSize:12,color:C.muted,marginBottom:4}}>{attended}/{total} classes {duration!=="overall"&&<span style={{color:C.accent}}>({duration})</span>}</div>
-                  {p<75&&total>0?<div style={{fontSize:11,color:C.danger,marginBottom:8}}>Need {needed} more to reach 75%</div>
-                    :total>0?<div style={{fontSize:11,color:C.accentText,marginBottom:8}}>Can miss {canMiss} more class{canMiss!==1?"es":""}</div>:<div style={{marginBottom:8}}/>}
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-  <Btn onClick={()=>markClass(sub,"present")} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accent,fontSize:11,padding:"5px 10px"}}>✓ Present</Btn>
-  <Btn onClick={()=>markClass(sub,"absent")} variant="danger" style={{fontSize:11,padding:"5px 10px"}}>✗ Absent</Btn>
-  <Btn onClick={()=>{setEditingSub(editingSub===sub.id?null:sub.id);setEditVals({attended:sub.attended||0,total:sub.total||0});}} style={{background:C.blueDim,border:`1px solid ${C.blue}44`,color:C.blue,fontSize:11,padding:"5px 10px"}}>✎ Edit</Btn></div>
-{editingSub===sub.id&&(
-  <div style={{display:"flex",gap:8,marginTop:10,alignItems:"flex-end"}}>
-    <div style={{flex:1}}>
-      <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Attended</div>
-      <Input type="number" value={editVals.attended} onChange={e=>setEditVals(p=>({...p,attended:e.target.value}))} style={{width:"100%"}}/>
-    </div>
-    <div style={{flex:1}}>
-      <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Total</div>
-      <Input type="number" value={editVals.total} onChange={e=>setEditVals(p=>({...p,total:e.target.value}))} style={{width:"100%"}}/>
-    </div>
-    <Btn onClick={()=>saveManualEdit(sub)} style={{padding:"9px 14px"}}>Save</Btn>
-  </div>
-)}
-                </div>
-              </div>
-              {showChart&&chartData.length>0&&(
-                <div style={{marginTop:16,paddingTop:16,borderTop:`1px solid ${C.border}`}}>
-                  <div style={{fontSize:11,color:C.muted,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.05em"}}>{duration} trend</div>
-                  <BarChart data={chartData} color={sub.color} height={100}/>
-                </div>
-              )}
-            </Card>;
-          })}
-        </div>}
-    </div>
-  );
 
 
 // ── Assignments ───────────────────────────────────────────────────────────────
