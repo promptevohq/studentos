@@ -308,1060 +308,248 @@ function Dashboard({subjects,assignments,exams,scores,profile,onNav}) {
     const total=sub.total||0; return s+att(sub.attended||0,total);
   },0)/subjects.length):0;
   const pending=assignments.filter(a=>a.status!=="submitted").length;
-  const nextExam=exams.length?[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date))[0]:null;
+  const overdue=assignments.filter(a=>a.status!=="submitted"&&daysLeft(a.due)<0).length;
+  const nextExam=exams.length?[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date)).find(e=>daysLeft(e.date)>=0):null;
   const urgent=assignments.filter(a=>a.status!=="submitted"&&daysLeft(a.due)<=5).sort((a,b)=>daysLeft(a.due)-daysLeft(b.due));
   const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75&&(s.total||0)>0);
-
-  // performance summary
+  const upcomingExams=[...exams].filter(e=>daysLeft(e.date)>=0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4);
   const passedSubjects=scores.filter(s=>{
     const tp=s.theory_max>0?(s.theory_marks/s.theory_max)*100:100;
     const pp=s.practical_max>0?(s.practical_marks/s.practical_max)*100:100;
     return tp>=(s.theory_pass_pct||50)&&pp>=(s.practical_pass_pct||50);
   });
-
   const hour=new Date().getHours();
-  const greet=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+  const greet=hour<5?"Good night":hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+  const greetEmoji=hour<5?"🌙":hour<12?"🌅":hour<17?"☀️":"🌆";
+  const attColor=avgAtt>=75?C.accent:avgAtt>=60?C.warn:C.danger;
+  const attBg=avgAtt>=75?C.accentDim:avgAtt>=60?C.warnDim:C.dangerDim;
 
-  return (
-    <div style={{animation:"fadeUp 0.3s ease"}}>
-      <div style={{marginBottom:24}}>
-        <div className="greeting" style={{fontSize:22,fontWeight:700,letterSpacing:"-0.03em"}}>{greet}, {profile?.name?.split(" ")[0]||"Student"} 👋</div>
-        <div style={{fontSize:13,color:C.muted,marginTop:4}}>{profile?.program||""}{profile?.college?` · ${profile.college}`:""}</div>
+  const StatCard=({label,value,sub,color,bg,icon,onClick,delay=0})=>(
+    <div onClick={onClick} style={{
+      background:`linear-gradient(135deg,${bg} 0%,${C.card} 100%)`,
+      border:`1px solid ${color}33`,borderRadius:20,padding:"18px 16px",
+      cursor:onClick?"pointer":"default",animation:`fadeUp 0.4s ease ${delay}s both`,
+      transition:"transform 0.2s ease,box-shadow 0.2s ease",
+      boxShadow:`0 4px 24px ${color}11`,
+    }}
+    onMouseEnter={e=>{if(onClick){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 32px ${color}22`;}}}
+    onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow=`0 4px 24px ${color}11`;}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+        <div style={{width:36,height:36,borderRadius:10,background:`${color}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{icon}</div>
+        {onClick&&<div style={{fontSize:10,color:color,opacity:0.7}}>→</div>}
       </div>
-      <div className="grid-4" style={{marginBottom:20}}>
-        {[
-          {label:"Attendance",value:`${avgAtt}%`,color:avgAtt>=75?C.accent:C.danger,bg:avgAtt>=75?C.accentDim:C.dangerDim,icon:"◎",nav:"attendance"},
-          {label:"Subjects Passed",value:`${passedSubjects.length}/${scores.length}`,color:C.purple,bg:C.purpleDim,icon:"▲",nav:"performance"},
-          {label:"Pending",value:pending,color:C.warn,bg:C.warnDim,icon:"◷",nav:"assignments"},
-          {label:"Next Exam",value:nextExam?`${daysLeft(nextExam.date)}d`:"—",color:C.blue,bg:C.blueDim,icon:"◈",nav:"exams"},
-        ].map(s=>(
-          <Card key={s.label} onClick={()=>onNav(s.nav)} style={{background:s.bg,border:`1px solid ${s.color}22`,padding:14,cursor:"pointer"}}>
-            <div style={{fontSize:10,color:s.color,fontWeight:600,letterSpacing:"0.05em",textTransform:"uppercase",marginBottom:6}}>{s.icon} {s.label}</div>
-            <div className="stat-value" style={{fontSize:24,fontWeight:700,fontFamily:M,color:s.color}}>{s.value}</div>
-          </Card>
-        ))}
-      </div>
-      <div className="grid-2" style={{marginBottom:16}}>
-        <Card>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <h2 style={{fontSize:14,fontWeight:700}}>Urgent Deadlines</h2>
-            <Btn onClick={()=>onNav("assignments")} variant="ghost" style={{fontSize:11,padding:"4px 10px"}}>See all</Btn>
-          </div>
-          {urgent.length===0?<div style={{color:C.accentText,fontSize:13,padding:"16px 0",textAlign:"center"}}>✓ No urgent deadlines</div>
-            :urgent.slice(0,3).map(a=>{const d=daysLeft(a.due);return(
-              <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`}}>
-                <div><div style={{fontSize:13,fontWeight:500,marginBottom:2}}>{a.title}</div><div style={{fontSize:11,color:C.muted}}>{a.subject}</div></div>
-                <Badge color={d<=2?C.danger:d<=4?C.warn:C.muted} bg={d<=2?C.dangerDim:d<=4?C.warnDim:C.border}>{d===0?"TODAY":d<0?"OVERDUE":`${d}d`}</Badge>
-              </div>
-            );})}
-        </Card>
-        <Card>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <h2 style={{fontSize:14,fontWeight:700}}>Attendance Alerts</h2>
-            <Btn onClick={()=>onNav("attendance")} variant="ghost" style={{fontSize:11,padding:"4px 10px"}}>See all</Btn>
-          </div>
-          {lowAtt.length===0?<div style={{color:C.accentText,fontSize:13,padding:"16px 0",textAlign:"center"}}>✓ All above 75%</div>
-            :lowAtt.map(s=>{const p=att(s.attended||0,s.total||0),needed=Math.ceil((0.75*(s.total||0)-(s.attended||0))/0.25);return(
-              <div key={s.id} style={{padding:"8px 0",borderBottom:`1px solid ${C.border}`}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                  <span style={{fontSize:13,fontWeight:500}}>{s.name}</span>
-                  <span style={{fontFamily:M,fontSize:13,color:C.danger,fontWeight:700}}>{p}%</span>
-                </div>
-                <div style={{fontSize:11,color:C.muted}}>Need <span style={{color:C.warn}}>{needed} more</span> to reach 75%</div>
-              </div>
-            );})}
-        </Card>
-      </div>
-      {exams.length>0&&<Card style={{marginBottom:16}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-          <h2 style={{fontSize:14,fontWeight:700}}>Upcoming Exams</h2>
-          <Btn onClick={()=>onNav("exams")} variant="ghost" style={{fontSize:11,padding:"4px 10px"}}>See all</Btn>
-        </div>
-        <div className="grid-4-exam">
-          {[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4).map(e=>{const d=daysLeft(e.date);return(
-            <div key={e.id} style={{background:C.surface,borderRadius:12,padding:12,border:`1px solid ${C.border}`}}>
-              <div style={{fontSize:10,color:C.muted,marginBottom:4,textTransform:"uppercase"}}>{e.type}</div>
-              <div style={{fontSize:12,fontWeight:600,marginBottom:6}}>{e.subject}</div>
-              <div style={{fontFamily:M,fontSize:20,fontWeight:700,color:d<=7?C.danger:d<=14?C.warn:C.blue}}>{d}d</div>
-              <div style={{fontSize:10,color:C.muted,marginTop:4}}>{e.date}</div>
-            </div>
-          );})}
-        </div>
-      </Card>}
+      <div style={{fontFamily:M,fontSize:26,fontWeight:700,color,lineHeight:1,marginBottom:4}}>{value}</div>
+      <div style={{fontSize:11,color:C.muted,fontWeight:500,textTransform:"uppercase",letterSpacing:"0.06em"}}>{label}</div>
+      {sub&&<div style={{fontSize:11,color,marginTop:4,opacity:0.8}}>{sub}</div>}
     </div>
   );
-}
 
-// ── Assignments ───────────────────────────────────────────────────────────────
-function Assignments({assignments,setAssignments,userId}) {
-  const [showAdd,setShowAdd]=useState(false);
-  const [filter,setFilter]=useState("all");
-  const [newA,setNewA]=useState({title:"",subject:"",due:"",priority:"medium"});
-  const priCol={high:C.danger,medium:C.warn,low:C.accent};
-  const priBg={high:C.dangerDim,medium:C.warnDim,low:C.accentDim};
-  const statCol={pending:[C.warn,C.warnDim],"in-progress":[C.blue,C.blueDim],submitted:[C.accentText,C.accentDim]};
-  const filtered=filter==="all"?assignments:assignments.filter(a=>a.status===filter);
-  const pending=assignments.filter(a=>a.status!=="submitted").length;
-  const overdue=assignments.filter(a=>a.status!=="submitted"&&daysLeft(a.due)<0).length;
-  const submitted=assignments.filter(a=>a.status==="submitted").length;
-
-  async function add() {
-    if(!newA.title||!newA.due) return;
-    const {data,error}=await supabase.from("assignments").insert({user_id:userId,...newA,status:"pending"}).select().single();
-    if(!error){setAssignments(prev=>[...prev,data]);setNewA({title:"",subject:"",due:"",priority:"medium"});setShowAdd(false);}
-  }
-  async function updateStatus(id,status) {
-    await supabase.from("assignments").update({status}).eq("id",id);
-    setAssignments(prev=>prev.map(a=>a.id===id?{...a,status}:a));
-  }
-  async function del(id) {
-    await supabase.from("assignments").delete().eq("id",id);
-    setAssignments(prev=>prev.filter(a=>a.id!==id));
-  }
-
-  const filters=[
-    {key:"all",label:`All (${assignments.length})`},
-    {key:"pending",label:"Pending"},
-    {key:"in-progress",label:"In Progress"},
-    {key:"submitted",label:"Done"},
-  ];
-
-  return (
+  return(
     <div style={{animation:"fadeUp 0.3s ease",maxWidth:900}}>
-      {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-        <div>
-          <h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:2}}>Assignments</h2>
-          <div style={{fontSize:13,color:C.muted}}>{pending} pending · {overdue>0?<span style={{color:C.danger}}>{overdue} overdue · </span>:""}{submitted} done</div>
-        </div>
-        <button onClick={()=>setShowAdd(!showAdd)} style={{
-          background:showAdd?C.surface:C.accent,border:`1px solid ${showAdd?C.border:C.accent}`,
-          color:showAdd?C.muted:"#000",padding:"9px 18px",borderRadius:12,fontSize:13,
-          fontWeight:700,cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
-        }}>{showAdd?"✕ Cancel":"+ Add"}</button>
-      </div>
 
-      {/* Stats strip */}
-      {assignments.length>0&&(
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
-          {[
-            {label:"Pending",value:pending,color:C.warn,bg:C.warnDim},
-            {label:"Overdue",value:overdue,color:overdue>0?C.danger:C.muted,bg:overdue>0?C.dangerDim:C.card},
-            {label:"Submitted",value:submitted,color:C.accent,bg:C.accentDim},
-          ].map(s=>(
-            <div key={s.label} style={{background:s.bg,border:`1px solid ${s.color}22`,borderRadius:14,padding:"12px 14px"}}>
-              <div style={{fontFamily:M,fontSize:22,fontWeight:700,color:s.color,lineHeight:1,marginBottom:4}}>{s.value}</div>
-              <div style={{fontSize:11,color:C.muted,textTransform:"uppercase",letterSpacing:"0.05em"}}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Add form */}
-      {showAdd&&(
-        <div style={{background:C.surface,border:`1px solid ${C.accent}44`,borderRadius:16,padding:20,marginBottom:20,animation:"fadeUp 0.2s ease both"}}>
-          <div style={{fontSize:13,fontWeight:700,marginBottom:14,color:C.accentText}}>New Assignment</div>
-          <input placeholder="Assignment title *" value={newA.title} onChange={e=>setNewA(p=>({...p,title:e.target.value}))}
-            style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",marginBottom:10}}/>
-          <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
-            <input placeholder="Subject" value={newA.subject} onChange={e=>setNewA(p=>({...p,subject:e.target.value}))}
-              style={{flex:"1 1 120px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
-            <input type="date" value={newA.due} onChange={e=>setNewA(p=>({...p,due:e.target.value}))}
-              style={{flex:"1 1 120px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
-          </div>
-          <div style={{display:"flex",gap:8,marginBottom:14}}>
-            {["high","medium","low"].map(p=>(
-              <button key={p} onClick={()=>setNewA(prev=>({...prev,priority:p}))} style={{
-                flex:1,padding:"8px 0",background:newA.priority===p?priCol[p]:C.card,
-                border:`1px solid ${newA.priority===p?priCol[p]:C.border}`,
-                color:newA.priority===p?"#000":C.muted,borderRadius:10,fontSize:12,
-                fontWeight:600,cursor:"pointer",fontFamily:F,textTransform:"capitalize",transition:"all 0.2s",
-              }}>{p}</button>
-            ))}
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={add} style={{background:C.accent,border:"none",color:"#000",padding:"10px 20px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Assignment</button>
-            <button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"10px 16px",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F}}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Filter tabs */}
-      <div style={{display:"flex",gap:4,marginBottom:20,padding:4,background:C.surface,borderRadius:14,border:`1px solid ${C.border}`,overflowX:"auto"}}>
-        {filters.map(f=>(
-          <button key={f.key} onClick={()=>setFilter(f.key)} style={{
-            flex:"0 0 auto",padding:"7px 14px",background:filter===f.key?C.accent:"transparent",
-            border:"none",color:filter===f.key?"#000":C.muted,fontSize:12,
-            fontWeight:filter===f.key?700:500,borderRadius:10,cursor:"pointer",fontFamily:F,whiteSpace:"nowrap",transition:"all 0.2s",
-          }}>{f.label}</button>
-        ))}
-      </div>
-
-      {/* Assignment list */}
-      {filtered.length===0
-        ?<div style={{textAlign:"center",padding:"60px 20px",background:C.card,border:`1px solid ${C.border}`,borderRadius:20}}>
-          <div style={{fontSize:48,marginBottom:16}}>✅</div>
-          <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>{filter==="all"?"No assignments yet":"Nothing here"}</div>
-          <div style={{fontSize:13,color:C.muted,marginBottom:20}}>{filter==="all"?"Add your first assignment to get started":"No assignments in this category"}</div>
-          {filter==="all"&&<button onClick={()=>setShowAdd(true)} style={{background:C.accent,border:"none",color:"#000",padding:"10px 24px",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Assignment</button>}
-        </div>
-        :<div style={{display:"flex",flexDirection:"column",gap:10}}>
-          {filtered.map((a,idx)=>{
-            const d=daysLeft(a.due);
-            const[sc,sb]=statCol[a.status]||statCol.pending;
-            const isOverdue=d<0&&a.status!=="submitted";
-            const urgColor=isOverdue?C.danger:d===0?C.danger:d<=2?C.danger:d<=5?C.warn:C.muted;
-            return(
-              <div key={a.id} style={{
-                background:C.card,border:`1px solid ${isOverdue?C.danger+"44":C.border}`,
-                borderRadius:16,overflow:"hidden",animation:`fadeUp 0.3s ease ${idx*0.04}s both`,
-                boxShadow:isOverdue?`0 0 20px ${C.danger}11`:"none",
-              }}>
-                <div style={{height:3,background:priCol[a.priority]||C.muted}}/>
-                <div style={{padding:"14px 16px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{
-                        fontSize:14,fontWeight:600,marginBottom:4,
-                        color:a.status==="submitted"?C.muted:C.text,
-                        textDecoration:a.status==="submitted"?"line-through":"none",
-                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",
-                      }}>{a.title}</div>
-                      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-                        {a.subject&&<span style={{fontSize:11,color:C.muted}}>{a.subject}</span>}
-                        {a.subject&&a.due&&<span style={{color:C.border}}>·</span>}
-                        {a.due&&<span style={{fontSize:11,color:urgColor,fontWeight:isOverdue||d<=2?700:400}}>
-                          {isOverdue?`${Math.abs(d)}d overdue`:d===0?"Due today":d===1?"Due tomorrow":`Due in ${d}d`}
-                        </span>}
-                      </div>
-                    </div>
-                    <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-                      <select value={a.status} onChange={e=>updateStatus(a.id,e.target.value)} style={{
-                        background:sb,border:`1px solid ${sc}44`,color:sc,
-                        fontSize:11,fontWeight:600,padding:"5px 10px",borderRadius:8,
-                        fontFamily:F,outline:"none",cursor:"pointer",
-                      }}>
-                        <option value="pending">Pending</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="submitted">Submitted</option>
-                      </select>
-                      <button onClick={()=>del(a.id)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:18,padding:"2px",lineHeight:1,transition:"color 0.2s"}}
-                        onMouseEnter={e=>e.currentTarget.style.color=C.danger}
-                        onMouseLeave={e=>e.currentTarget.style.color=C.muted}>×</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>}
-    </div>
-  );
-}
-
-// ── Exams ─────────────────────────────────────────────────────────────────────
-function Exams({exams,setExams,userId}) {
-  const [showAdd,setShowAdd]=useState(false);
-  const [newE,setNewE]=useState({subject:"",date:"",time:"",type:"Midterm",hall:""});
-  const [customExamTypes,setCustomExamTypes]=useState([]);
-
-  async function add() {
-    if(!newE.subject||!newE.date) return;
-    const {data,error}=await supabase.from("exams").insert({user_id:userId,...newE}).select().single();
-    if(!error){setExams(prev=>[...prev,data]);setNewE({subject:"",date:"",time:"",type:"Midterm",hall:""});setShowAdd(false);}
-  }
-  async function del(id) {
-    await supabase.from("exams").delete().eq("id",id);
-    setExams(prev=>prev.filter(e=>e.id!==id));
-  }
-
-  const sorted=[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const upcoming=sorted.filter(e=>daysLeft(e.date)>=0);
-  const past=sorted.filter(e=>daysLeft(e.date)<0);
-
-  return (
-    <div style={{animation:"fadeUp 0.3s ease",maxWidth:900}}>
-      {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-        <div>
-          <h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:2}}>Exam Countdown</h2>
-          <div style={{fontSize:13,color:C.muted}}>{upcoming.length} upcoming · {past.length} past</div>
-        </div>
-        <button onClick={()=>setShowAdd(!showAdd)} style={{
-          background:showAdd?C.surface:C.accent,border:`1px solid ${showAdd?C.border:C.accent}`,
-          color:showAdd?C.muted:"#000",padding:"9px 18px",borderRadius:12,fontSize:13,
-          fontWeight:700,cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
-        }}>{showAdd?"✕ Cancel":"+ Add Exam"}</button>
-      </div>
-
-      {/* Add form */}
-      {showAdd&&(
-        <div style={{background:C.surface,border:`1px solid ${C.accent}44`,borderRadius:16,padding:20,marginBottom:20,animation:"fadeUp 0.2s ease both"}}>
-          <div style={{fontSize:13,fontWeight:700,marginBottom:14,color:C.accentText}}>New Exam</div>
-          <input placeholder="Subject *" value={newE.subject} onChange={e=>setNewE(p=>({...p,subject:e.target.value}))}
-            style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",marginBottom:10}}/>
-          <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
-            <input type="date" value={newE.date} onChange={e=>setNewE(p=>({...p,date:e.target.value}))}
-              style={{flex:"1 1 120px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
-            <input type="time" value={newE.time} onChange={e=>setNewE(p=>({...p,time:e.target.value}))}
-              style={{flex:"1 1 100px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
-            <input placeholder="Hall / Room" value={newE.hall} onChange={e=>setNewE(p=>({...p,hall:e.target.value}))}
-              style={{flex:"1 1 100px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
-          </div>
-          {/* Exam type */}
-          <div style={{marginBottom:14}}>
-            <input placeholder="Exam type" value={newE.type} onChange={e=>setNewE(p=>({...p,type:e.target.value}))}
-              style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",marginBottom:8}}/>
-            <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-              {["Midterm","Final","Quiz","Practical","Viva","Internal","Theory","Oral",...(customExamTypes||[])].map(t=>(
-                <button key={t} onClick={()=>setNewE(p=>({...p,type:t}))} style={{
-                  background:newE.type===t?C.accent:C.card,border:`1px solid ${newE.type===t?C.accent:C.border}`,
-                  color:newE.type===t?"#000":C.muted,fontSize:11,padding:"4px 10px",borderRadius:8,cursor:"pointer",fontFamily:F,
-                  display:"flex",alignItems:"center",gap:4,transition:"all 0.15s",
-                }}>
-                  {t}
-                  {customExamTypes?.includes(t)&&<span onClick={e=>{e.stopPropagation();setCustomExamTypes(prev=>prev.filter(x=>x!==t));}} style={{color:C.danger,fontWeight:700,marginLeft:2}}>×</span>}
-                </button>
-              ))}
-              {newE.type&&!["Midterm","Final","Quiz","Practical","Viva","Internal","Theory","Oral",...(customExamTypes||[])].includes(newE.type)&&(
-                <button onClick={()=>setCustomExamTypes(prev=>[...(prev||[]),newE.type])} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accentText,fontSize:11,padding:"4px 10px",borderRadius:8,cursor:"pointer",fontFamily:F}}>
-                  + Save "{newE.type}"
-                </button>
-              )}
-            </div>
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={add} style={{background:C.accent,border:"none",color:"#000",padding:"10px 20px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Exam</button>
-            <button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"10px 16px",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F}}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {exams.length===0
-        ?<div style={{textAlign:"center",padding:"60px 20px",background:C.card,border:`1px solid ${C.border}`,borderRadius:20}}>
-          <div style={{fontSize:48,marginBottom:16}}>📅</div>
-          <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>No exams added yet</div>
-          <div style={{fontSize:13,color:C.muted,marginBottom:20}}>Track your upcoming exams and never miss a deadline</div>
-          <button onClick={()=>setShowAdd(true)} style={{background:C.accent,border:"none",color:"#000",padding:"10px 24px",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Exam</button>
-        </div>
-        :<div style={{display:"flex",flexDirection:"column",gap:12}}>
-          {upcoming.length>0&&<div style={{fontSize:12,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4}}>Upcoming</div>}
-          {upcoming.map((e,idx)=>{
-            const d=daysLeft(e.date);
-            const urg=d<=3?C.danger:d<=7?C.danger:d<=14?C.warn:C.blue;
-            const urgBg=d<=7?C.dangerDim:d<=14?C.warnDim:C.blueDim;
-            const pct=Math.max(0,Math.min(100,100-(d/60)*100));
-            return(
-              <div key={e.id} style={{
-                background:C.card,border:`1px solid ${urg}33`,borderRadius:20,
-                overflow:"hidden",animation:`fadeUp 0.3s ease ${idx*0.05}s both`,
-                boxShadow:`0 4px 20px ${urg}11`,
-              }}>
-                <div style={{height:3,background:`linear-gradient(90deg,${urg} ${pct}%,${C.border} ${pct}%)`}}/>
-                <div style={{padding:20}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                    <div style={{flex:1,minWidth:0,paddingRight:16}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                        <span style={{background:urgBg,border:`1px solid ${urg}44`,color:urg,fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>{e.type}</span>
-                      </div>
-                      <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>{e.subject}</div>
-                      <div style={{display:"flex",gap:14,fontSize:12,color:C.muted,flexWrap:"wrap"}}>
-                        <span>📅 {e.date}</span>
-                        {e.time&&<span>🕐 {e.time}</span>}
-                        {e.hall&&<span>📍 {e.hall}</span>}
-                      </div>
-                    </div>
-                    <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flexShrink:0}}>
-                      <div style={{
-                        width:64,height:64,borderRadius:16,background:urgBg,
-                        border:`2px solid ${urg}44`,display:"flex",flexDirection:"column",
-                        alignItems:"center",justifyContent:"center",
-                      }}>
-                        <div style={{fontFamily:M,fontSize:22,fontWeight:800,color:urg,lineHeight:1}}>{d}</div>
-                        <div style={{fontSize:9,color:C.muted,marginTop:2}}>days</div>
-                      </div>
-                      <button onClick={()=>del(e.id)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:12,fontFamily:F,padding:"2px"}}>remove</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          {past.length>0&&(
-            <>
-              <div style={{fontSize:12,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginTop:8,marginBottom:4}}>Past</div>
-              {past.map(e=>(
-                <div key={e.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:14,padding:"12px 16px",opacity:0.6,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div>
-                    <div style={{fontSize:13,fontWeight:600,marginBottom:2}}>{e.subject}</div>
-                    <div style={{fontSize:11,color:C.muted}}>{e.type} · {e.date}</div>
-                  </div>
-                  <button onClick={()=>del(e.id)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:18}}>×</button>
-                </div>
-              ))}
-            </>
-          )}
-        </div>}
-    </div>
-  );
-}
-
-// ── Performance Tracker ───────────────────────────────────────────────────────
-function Performance({scores,setScores,userId,profile}) {
-  const [showAdd,setShowAdd]=useState(false);
-  const [tab,setTab]=useState("subjects");
-  const [newS,setNewS]=useState({
-    subject:"",exam_type:"Internal",
-    theory_marks:"",theory_max:150,theory_pass_pct:50,
-    practical_marks:"",practical_max:100,practical_pass_pct:50,
-    internal_marks:"",internal_max:50,internal_pass_pct:50,
-    date:new Date().toISOString().split("T")[0],notes:""
-  });
-  const isBHMS=(profile?.program||"").toUpperCase().includes("BHMS");
-
-  function passStatus(s) {
-    const tPct=s.theory_max>0?(s.theory_marks/s.theory_max)*100:null;
-    const pPct=s.practical_max>0?(s.practical_marks/s.practical_max)*100:null;
-    const iPct=s.internal_max>0?(s.internal_marks/s.internal_max)*100:null;
-    const tPass=tPct===null||tPct>=(s.theory_pass_pct||50);
-    const pPass=pPct===null||pPct>=(s.practical_pass_pct||50);
-    const iPass=iPct===null||iPct>=(s.internal_pass_pct||50);
-    return {tPass,pPass,iPass,overall:tPass&&pPass&&iPass,tPct,pPct,iPct};
-  }
-
-  async function add() {
-    if(!newS.subject) return;
-    const payload={
-      user_id:userId,subject:newS.subject,exam_type:newS.exam_type,
-      theory_marks:parseFloat(newS.theory_marks)||0,theory_max:parseFloat(newS.theory_max)||0,theory_pass_pct:parseFloat(newS.theory_pass_pct)||50,
-      practical_marks:parseFloat(newS.practical_marks)||0,practical_max:parseFloat(newS.practical_max)||0,practical_pass_pct:parseFloat(newS.practical_pass_pct)||50,
-      internal_marks:parseFloat(newS.internal_marks)||0,internal_max:parseFloat(newS.internal_max)||0,internal_pass_pct:parseFloat(newS.internal_pass_pct)||50,
-      date:newS.date,notes:newS.notes,
-    };
-    const {data,error}=await supabase.from("scores").insert(payload).select().single();
-    if(!error){
-      setScores(prev=>[...prev,data]);
-      setNewS({subject:"",exam_type:"Internal",theory_marks:"",theory_max:150,theory_pass_pct:50,practical_marks:"",practical_max:100,practical_pass_pct:50,internal_marks:"",internal_max:50,internal_pass_pct:50,date:new Date().toISOString().split("T")[0],notes:""});
-      setShowAdd(false);
-    }
-  }
-  async function del(id) {
-    await supabase.from("scores").delete().eq("id",id);
-    setScores(prev=>prev.filter(s=>s.id!==id));
-  }
-
-  const passed=scores.filter(s=>passStatus(s).overall).length;
-  const failed=scores.filter(s=>!passStatus(s).overall).length;
-  const avgTheory=scores.length?Math.round(scores.reduce((a,s)=>a+(s.theory_max>0?(s.theory_marks/s.theory_max)*100:0),0)/scores.length):0;
-  const avgPractical=scores.filter(s=>s.practical_max>0).length?Math.round(scores.filter(s=>s.practical_max>0).reduce((a,s)=>a+(s.practical_marks/s.practical_max)*100,0)/scores.filter(s=>s.practical_max>0).length):0;
-  const chartData=scores.map(s=>({label:s.subject.slice(0,6),value:s.theory_max>0?Math.round((s.theory_marks/s.theory_max)*100):0}));
-
-  const SectionInput=({label,color,marks,onMarks,max,onMax,passPct,onPass,bhmsHint})=>(
-    <div style={{background:C.bg,borderRadius:12,padding:14,marginBottom:10,border:`1px solid ${color}22`}}>
-      <div style={{fontSize:11,color,fontWeight:700,marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em"}}>{label}</div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        {[
-          {l:`Marks obtained`,v:marks,fn:onMarks,ph:"0"},
-          {l:`Max ${bhmsHint?`(BHMS: ${bhmsHint})`:""}`,v:max,fn:onMax,ph:String(bhmsHint||"")},
-          {l:"Pass %",v:passPct,fn:onPass,ph:"50"},
-        ].map(f=>(
-          <div key={f.l} style={{flex:"1 1 70px"}}>
-            <div style={{fontSize:10,color:C.muted,marginBottom:5}}>{f.l}</div>
-            <input type="number" placeholder={f.ph} value={f.v} onChange={e=>f.fn(e.target.value)}
-              style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"8px 10px",borderRadius:8,fontSize:13,fontFamily:M,fontWeight:600,outline:"none",textAlign:"center"}}/>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{animation:"fadeUp 0.3s ease",maxWidth:900}}>
-      {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-        <div>
-          <h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:2}}>Performance</h2>
-          <div style={{fontSize:13,color:C.muted}}>{scores.length} records · {passed} passed · {failed} failed</div>
-        </div>
-        <button onClick={()=>setShowAdd(!showAdd)} style={{
-          background:showAdd?C.surface:C.accent,border:`1px solid ${showAdd?C.border:C.accent}`,
-          color:showAdd?C.muted:"#000",padding:"9px 18px",borderRadius:12,fontSize:13,
-          fontWeight:700,cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
-        }}>{showAdd?"✕ Cancel":"+ Add Scores"}</button>
-      </div>
-
-      {/* Summary cards */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10,marginBottom:20}}>
-        {[
-          {label:"Passed",value:passed,color:C.accent,bg:C.accentDim,icon:"✓"},
-          {label:"Failed",value:failed,color:C.danger,bg:C.dangerDim,icon:"✗"},
-          {label:"Avg Theory",value:`${avgTheory}%`,color:C.blue,bg:C.blueDim,icon:"T"},
-          {label:"Avg Practical",value:`${avgPractical}%`,color:C.purple,bg:C.purpleDim,icon:"P"},
-        ].map(s=>(
-          <div key={s.label} style={{background:s.bg,border:`1px solid ${s.color}22`,borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:36,height:36,borderRadius:10,background:`${s.color}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:s.color,flexShrink:0}}>{s.icon}</div>
+      {/* Hero */}
+      <div style={{
+        background:`linear-gradient(135deg,${C.accentDim} 0%,${C.card} 60%,${C.blueDim} 100%)`,
+        border:`1px solid ${C.border}`,borderRadius:24,padding:"28px 28px 24px",
+        marginBottom:20,position:"relative",overflow:"hidden",
+        animation:"fadeUp 0.3s ease both",
+      }}>
+        <div style={{position:"absolute",top:-40,right:-40,width:180,height:180,borderRadius:"50%",background:`${C.accent}08`,pointerEvents:"none"}}/>
+        <div style={{position:"absolute",bottom:-60,left:-20,width:140,height:140,borderRadius:"50%",background:`${C.blue}08`,pointerEvents:"none"}}/>
+        <div style={{position:"relative"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16}}>
             <div>
-              <div style={{fontFamily:M,fontSize:20,fontWeight:700,color:s.color,lineHeight:1}}>{s.value}</div>
-              <div style={{fontSize:11,color:C.muted,marginTop:3,textTransform:"uppercase",letterSpacing:"0.05em"}}>{s.label}</div>
+              <div style={{fontSize:13,color:C.accentText,fontWeight:600,marginBottom:6,letterSpacing:"0.04em"}}>
+                {greetEmoji} {greet}
+              </div>
+              <div style={{fontSize:28,fontWeight:800,letterSpacing:"-0.03em",marginBottom:6,lineHeight:1.1}}>
+                {profile?.name?.split(" ")[0]||"Student"} 👋
+              </div>
+              <div style={{fontSize:13,color:C.muted}}>
+                {profile?.program||"BHMS"}{profile?.college?` · ${profile.college}`:""}{profile?.semester?` · ${profile.semester}`:""}
+              </div>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
+              <div style={{position:"relative",width:80,height:80}}>
+                <svg width={80} height={80} style={{transform:"rotate(-90deg)"}}>
+                  <circle cx={40} cy={40} r={32} fill="none" stroke={C.border} strokeWidth={6}/>
+                  <circle cx={40} cy={40} r={32} fill="none" stroke={attColor} strokeWidth={6}
+                    strokeDasharray={2*Math.PI*32}
+                    strokeDashoffset={2*Math.PI*32-(avgAtt/100)*2*Math.PI*32}
+                    strokeLinecap="round" style={{transition:"stroke-dashoffset 1s ease"}}/>
+                </svg>
+                <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+                  <div style={{fontFamily:M,fontSize:16,fontWeight:700,color:attColor,lineHeight:1}}>{avgAtt}%</div>
+                  <div style={{fontSize:9,color:C.muted,marginTop:1}}>attend.</div>
+                </div>
+              </div>
+              <div style={{fontSize:10,color:avgAtt>=75?C.accentText:C.danger,fontWeight:600,textAlign:"center"}}>
+                {avgAtt>=75?"✓ On track":"⚠ Below 75%"}
+              </div>
             </div>
           </div>
-        ))}
+          {overdue>0&&(
+            <div style={{marginTop:16,padding:"8px 14px",background:`${C.danger}15`,border:`1px solid ${C.danger}33`,borderRadius:10,fontSize:12,color:C.danger,display:"inline-flex",alignItems:"center",gap:6}}>
+              ⚠ {overdue} overdue assignment{overdue>1?"s":""} — check Assignments
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Chart */}
+      {/* Stat Cards */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:20}}>
+        <StatCard label="Attendance" value={`${avgAtt}%`} color={attColor} bg={attBg} icon="◎"
+          sub={avgAtt<75?`${lowAtt.length} subjects low`:subjects.length>0?"All looking good":"No subjects yet"}
+          onClick={()=>onNav("attendance")} delay={0}/>
+        <StatCard label="Passed" value={`${passedSubjects.length}/${scores.length}`} color={C.purple} bg={C.purpleDim} icon="▲"
+          sub={scores.length>0?`${Math.round((passedSubjects.length/scores.length)*100)||0}% pass rate`:"No scores yet"}
+          onClick={()=>onNav("performance")} delay={0.05}/>
+        <StatCard label="Assignments" value={pending} color={C.warn} bg={C.warnDim} icon="◈"
+          sub={overdue>0?`${overdue} overdue`:pending>0?"In progress":"All done!"}
+          onClick={()=>onNav("assignments")} delay={0.1}/>
+        <StatCard label="Next Exam" value={nextExam?`${daysLeft(nextExam.date)}d`:"—"} color={C.blue} bg={C.blueDim} icon="◷"
+          sub={nextExam?nextExam.subject:"No exams added"}
+          onClick={()=>onNav("exams")} delay={0.15}/>
+      </div>
+
+      {/* Main Grid */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:16}}>
+
+        {/* Upcoming Exams */}
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20,animation:"fadeUp 0.4s ease 0.2s both"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{fontSize:14,fontWeight:700}}>Upcoming Exams</div>
+            <button onClick={()=>onNav("exams")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>See all →</button>
+          </div>
+          {upcomingExams.length===0
+            ?<div style={{textAlign:"center",padding:"24px 0"}}>
+              <div style={{fontSize:28,marginBottom:8}}>📅</div>
+              <div style={{color:C.muted,fontSize:13,marginBottom:12}}>No upcoming exams</div>
+              <button onClick={()=>onNav("exams")} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accent,borderRadius:8,padding:"6px 14px",fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>Add Exam</button>
+            </div>
+            :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {upcomingExams.map((e,i)=>{
+                const d=daysLeft(e.date);
+                const col=d<=7?C.danger:d<=14?C.warn:C.blue;
+                const bg=d<=7?C.dangerDim:d<=14?C.warnDim:C.blueDim;
+                return(
+                  <div key={e.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:bg,borderRadius:12,border:`1px solid ${col}22`}}>
+                    <div style={{textAlign:"center",minWidth:40}}>
+                      <div style={{fontFamily:M,fontSize:20,fontWeight:700,color:col,lineHeight:1}}>{d}</div>
+                      <div style={{fontSize:9,color:C.muted}}>days</div>
+                    </div>
+                    <div style={{width:1,height:32,background:C.border}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:600,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subject}</div>
+                      <div style={{fontSize:11,color:C.muted}}>{e.type} · {e.date}</div>
+                    </div>
+                    <div style={{width:8,height:8,borderRadius:"50%",background:col,flexShrink:0}}/>
+                  </div>
+                );
+              })}
+            </div>}
+        </div>
+
+        {/* Assignments */}
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20,animation:"fadeUp 0.4s ease 0.25s both"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{fontSize:14,fontWeight:700}}>Assignments</div>
+            <button onClick={()=>onNav("assignments")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>See all →</button>
+          </div>
+          {urgent.length===0&&pending===0
+            ?<div style={{textAlign:"center",padding:"24px 0"}}>
+              <div style={{fontSize:28,marginBottom:8}}>✅</div>
+              <div style={{color:C.accentText,fontSize:13,fontWeight:600}}>All caught up!</div>
+              <div style={{color:C.muted,fontSize:12,marginTop:4}}>No pending assignments</div>
+            </div>
+            :urgent.length===0
+            ?<div style={{textAlign:"center",padding:"16px 0"}}>
+              <div style={{color:C.accentText,fontSize:13}}>✓ No urgent deadlines</div>
+              <div style={{color:C.muted,fontSize:12,marginTop:4}}>{pending} assignment{pending!==1?"s":""} in progress</div>
+            </div>
+            :<div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {urgent.slice(0,4).map(a=>{
+                const d=daysLeft(a.due);
+                const col=d<0?C.danger:d<=2?C.danger:d<=4?C.warn:C.muted;
+                const priCol={high:C.danger,medium:C.warn,low:C.accent};
+                return(
+                  <div key={a.id} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px",background:C.surface,borderRadius:12,border:`1px solid ${C.border}`}}>
+                    <div style={{width:3,height:"100%",minHeight:32,borderRadius:2,background:priCol[a.priority]||C.muted,flexShrink:0}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:500,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.title}</div>
+                      <div style={{fontSize:11,color:C.muted}}>{a.subject}</div>
+                    </div>
+                    <div style={{fontSize:11,color:col,fontWeight:700,fontFamily:M,flexShrink:0}}>
+                      {d<0?"OVERDUE":d===0?"TODAY":`${d}d`}
+                    </div>
+                  </div>
+                );
+              })}
+              {urgent.length>4&&<div style={{fontSize:12,color:C.muted,textAlign:"center",paddingTop:4}}>+{urgent.length-4} more</div>}
+            </div>}
+        </div>
+
+      </div>
+
+      {/* Attendance Alerts */}
+      {lowAtt.length>0&&(
+        <div style={{background:C.card,border:`1px solid ${C.danger}33`,borderRadius:20,padding:20,marginBottom:16,animation:"fadeUp 0.4s ease 0.3s both"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:C.danger,animation:"pulse 1.5s infinite"}}/>
+              <div style={{fontSize:14,fontWeight:700,color:C.danger}}>Attendance Alerts</div>
+            </div>
+            <button onClick={()=>onNav("attendance")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>Fix now →</button>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+            {lowAtt.map(s=>{
+              const p=att(s.attended||0,s.total||0);
+              const needed=Math.ceil((0.75*(s.total||0)-(s.attended||0))/0.25);
+              return(
+                <div key={s.id} style={{background:C.dangerDim,borderRadius:12,padding:"10px 14px",border:`1px solid ${C.danger}22`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <div style={{fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,paddingRight:8}}>{s.name}</div>
+                    <div style={{fontFamily:M,fontSize:14,fontWeight:700,color:C.danger,flexShrink:0}}>{p}%</div>
+                  </div>
+                  <div style={{height:4,background:`${C.danger}22`,borderRadius:2,marginBottom:6,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${p}%`,background:C.danger,borderRadius:2,transition:"width 0.6s ease"}}/>
+                  </div>
+                  <div style={{fontSize:11,color:C.muted}}>Need <span style={{color:C.warn,fontWeight:600}}>{needed} more</span> class{needed!==1?"es":""} to reach 75%</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Performance Summary */}
       {scores.length>0&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:20,marginBottom:20}}>
-          <div style={{fontSize:13,fontWeight:700,marginBottom:14}}>Theory % by Subject</div>
-          <BarChart data={chartData} color={C.blue} height={120}/>
-        </div>
-      )}
-
-      {/* Add form */}
-      {showAdd&&(
-        <div style={{background:C.surface,border:`1px solid ${C.accent}44`,borderRadius:16,padding:20,marginBottom:20,animation:"fadeUp 0.2s ease both"}}>
-          <div style={{fontSize:13,fontWeight:700,marginBottom:14,color:C.accentText}}>Add Score Record</div>
-          <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
-            <input placeholder="Subject *" value={newS.subject} onChange={e=>setNewS(p=>({...p,subject:e.target.value}))}
-              style={{flex:"2 1 140px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
-            <select value={["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)?newS.exam_type:"Custom"}
-              onChange={e=>{if(e.target.value==="Custom")setNewS(p=>({...p,exam_type:""}));else setNewS(p=>({...p,exam_type:e.target.value}));}}
-              style={{flex:"1 1 100px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}>
-              <option>Internal</option><option>Midterm</option><option>Final</option><option>Practical</option><option>Viva</option><option value="Custom">Custom</option>
-            </select>
-            {!["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)&&(
-              <input placeholder="Exam name" value={newS.exam_type} onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))}
-                style={{flex:"2 1 140px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
-            )}
-            <input type="date" value={newS.date} onChange={e=>setNewS(p=>({...p,date:e.target.value}))}
-              style={{flex:"1 1 120px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20,animation:"fadeUp 0.4s ease 0.35s both"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <div style={{fontSize:14,fontWeight:700}}>Performance Summary</div>
+            <button onClick={()=>onNav("performance")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>Details →</button>
           </div>
-          <SectionInput label="Theory" color={C.blue} marks={newS.theory_marks} onMarks={v=>setNewS(p=>({...p,theory_marks:v}))} max={newS.theory_max} onMax={v=>setNewS(p=>({...p,theory_max:v}))} passPct={newS.theory_pass_pct} onPass={v=>setNewS(p=>({...p,theory_pass_pct:v}))} bhmsHint={isBHMS?150:null}/>
-          <SectionInput label="Practical / Oral" color={C.purple} marks={newS.practical_marks} onMarks={v=>setNewS(p=>({...p,practical_marks:v}))} max={newS.practical_max} onMax={v=>setNewS(p=>({...p,practical_max:v}))} passPct={newS.practical_pass_pct} onPass={v=>setNewS(p=>({...p,practical_pass_pct:v}))} bhmsHint={isBHMS?100:null}/>
-          <SectionInput label="Internal Assessment" color={C.warn} marks={newS.internal_marks} onMarks={v=>setNewS(p=>({...p,internal_marks:v}))} max={newS.internal_max} onMax={v=>setNewS(p=>({...p,internal_max:v}))} passPct={newS.internal_pass_pct} onPass={v=>setNewS(p=>({...p,internal_pass_pct:v}))} bhmsHint={isBHMS?50:null}/>
-          <input placeholder="Notes (optional)" value={newS.notes} onChange={e=>setNewS(p=>({...p,notes:e.target.value}))}
-            style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",marginBottom:14}}/>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={add} style={{background:C.accent,border:"none",color:"#000",padding:"10px 20px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Save Record</button>
-            <button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"10px 16px",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F}}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div style={{display:"flex",gap:4,marginBottom:16,padding:4,background:C.surface,borderRadius:12,border:`1px solid ${C.border}`}}>
-        {[{k:"subjects",l:"By Subject"},{k:"all",l:"All Records"}].map(t=>(
-          <button key={t.k} onClick={()=>setTab(t.k)} style={{flex:1,padding:"7px 0",background:tab===t.k?C.accent:"transparent",border:"none",color:tab===t.k?"#000":C.muted,fontSize:12,fontWeight:tab===t.k?700:500,borderRadius:9,cursor:"pointer",fontFamily:F,transition:"all 0.2s"}}>{t.l}</button>
-        ))}
-      </div>
-
-      {/* Records */}
-      {scores.length===0
-        ?<div style={{textAlign:"center",padding:"60px 20px",background:C.card,border:`1px solid ${C.border}`,borderRadius:20}}>
-          <div style={{fontSize:48,marginBottom:16}}>📊</div>
-          <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>No scores recorded yet</div>
-          <div style={{fontSize:13,color:C.muted,marginBottom:20}}>Track your theory, practical and internal marks</div>
-          <button onClick={()=>setShowAdd(true)} style={{background:C.accent,border:"none",color:"#000",padding:"10px 24px",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add First Score</button>
-        </div>
-        :<div style={{display:"flex",flexDirection:"column",gap:12}}>
-          {scores.map((s,idx)=>{
-            const {tPass,pPass,iPass,overall,tPct,pPct,iPct}=passStatus(s);
-            return(
-              <div key={s.id} style={{
-                background:C.card,border:`1px solid ${overall?C.accent+"22":C.danger+"22"}`,
-                borderRadius:16,overflow:"hidden",animation:`fadeUp 0.3s ease ${idx*0.04}s both`,
-              }}>
-                <div style={{height:3,background:overall?C.accent:C.danger}}/>
-                <div style={{padding:16}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-                    <div>
-                      <div style={{fontSize:15,fontWeight:700,marginBottom:4}}>{s.subject}</div>
-                      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                        <span style={{background:C.blueDim,border:`1px solid ${C.blue}33`,color:C.blue,fontSize:10,fontWeight:600,padding:"2px 8px",borderRadius:6}}>{s.exam_type}</span>
-                        <span style={{background:overall?C.accentDim:C.dangerDim,border:`1px solid ${overall?C.accent+"33":C.danger+"33"}`,color:overall?C.accent:C.danger,fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:6}}>{overall?"PASS":"FAIL"}</span>
-                        {s.date&&<span style={{background:C.surface,color:C.muted,fontSize:10,padding:"2px 8px",borderRadius:6}}>{s.date}</span>}
-                      </div>
-                    </div>
-                    <button onClick={()=>del(s.id)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:18,padding:"2px"}}
-                      onMouseEnter={e=>e.currentTarget.style.color=C.danger}
-                      onMouseLeave={e=>e.currentTarget.style.color=C.muted}>×</button>
+          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+            {scores.slice(0,6).map(s=>{
+              const tPct=s.theory_max>0?Math.round((s.theory_marks/s.theory_max)*100):null;
+              const pass=tPct===null||tPct>=(s.theory_pass_pct||50);
+              return(
+                <div key={s.id} style={{flex:"1 1 120px",background:pass?C.accentDim:C.dangerDim,borderRadius:12,padding:"10px 14px",border:`1px solid ${pass?C.accent+"33":C.danger+"33"}`}}>
+                  <div style={{fontSize:12,fontWeight:600,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subject}</div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{fontFamily:M,fontSize:18,fontWeight:700,color:pass?C.accent:C.danger}}>{tPct!==null?`${tPct}%`:"—"}</div>
+                    <div style={{fontSize:10,color:pass?C.accentText:C.danger,fontWeight:600}}>{pass?"PASS":"FAIL"}</div>
                   </div>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {s.theory_max>0&&(
-                      <div style={{flex:"1 1 80px",background:C.bg,borderRadius:10,padding:"10px 12px",border:`1px solid ${tPass?C.accent+"33":C.danger+"33"}`}}>
-                        <div style={{fontSize:10,color:C.blue,marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Theory</div>
-                        <div style={{fontFamily:M,fontSize:16,fontWeight:700,color:tPass?C.accent:C.danger,marginBottom:2}}>{s.theory_marks}/{s.theory_max}</div>
-                        <div style={{height:3,background:C.border,borderRadius:2,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:`${Math.min(tPct||0,100)}%`,background:tPass?C.accent:C.danger,borderRadius:2}}/>
-                        </div>
-                        <div style={{fontSize:10,color:C.muted,marginTop:3}}>{Math.round(tPct||0)}% · need {s.theory_pass_pct}%</div>
-                      </div>
-                    )}
-                    {s.practical_max>0&&(
-                      <div style={{flex:"1 1 80px",background:C.bg,borderRadius:10,padding:"10px 12px",border:`1px solid ${pPass?C.accent+"33":C.danger+"33"}`}}>
-                        <div style={{fontSize:10,color:C.purple,marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Practical</div>
-                        <div style={{fontFamily:M,fontSize:16,fontWeight:700,color:pPass?C.accent:C.danger,marginBottom:2}}>{s.practical_marks}/{s.practical_max}</div>
-                        <div style={{height:3,background:C.border,borderRadius:2,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:`${Math.min(pPct||0,100)}%`,background:pPass?C.accent:C.danger,borderRadius:2}}/>
-                        </div>
-                        <div style={{fontSize:10,color:C.muted,marginTop:3}}>{Math.round(pPct||0)}% · need {s.practical_pass_pct}%</div>
-                      </div>
-                    )}
-                    {s.internal_max>0&&(
-                      <div style={{flex:"1 1 80px",background:C.bg,borderRadius:10,padding:"10px 12px",border:`1px solid ${iPass?C.accent+"33":C.danger+"33"}`}}>
-                        <div style={{fontSize:10,color:C.warn,marginBottom:4,fontWeight:700,textTransform:"uppercase"}}>Internal</div>
-                        <div style={{fontFamily:M,fontSize:16,fontWeight:700,color:iPass?C.accent:C.danger,marginBottom:2}}>{s.internal_marks}/{s.internal_max}</div>
-                        <div style={{height:3,background:C.border,borderRadius:2,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:`${Math.min(iPct||0,100)}%`,background:iPass?C.accent:C.danger,borderRadius:2}}/>
-                        </div>
-                        <div style={{fontSize:10,color:C.muted,marginTop:3}}>{Math.round(iPct||0)}% · need {s.internal_pass_pct}%</div>
-                      </div>
-                    )}
-                  </div>
-                  {s.notes&&<div style={{marginTop:10,fontSize:12,color:C.muted,fontStyle:"italic",paddingTop:10,borderTop:`1px solid ${C.border}`}}>"{s.notes}"</div>}
                 </div>
-              </div>
-            );
-          })}
-        </div>}
+              );
+            })}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
-
-// ── AI Chat ───────────────────────────────────────────────────────────────────
-function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
-  const [conversations,setConversations]=useState([]);
-  const [activeConv,setActiveConv]=useState(null);
-  const [messages,setMessages]=useState([]);
-  const [input,setInput]=useState("");
-  const [loading,setLoading]=useState(false);
-  const [showSidebar,setShowSidebar]=useState(false);
-  const [editingTitle,setEditingTitle]=useState(null);
-  const [newTitle,setNewTitle]=useState("");
-  const [showArchived,setShowArchived]=useState(false);
-  const bottomRef=useRef(null);
-  const inputRef=useRef(null);
-
-  useEffect(()=>{loadConversations();},[]);
-  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
-
-  async function loadConversations() {
-    const {data}=await supabase.from("ai_conversations").select("*").eq("user_id",userId).order("updated_at",{ascending:false});
-    setConversations(data||[]);
-  }
-  async function loadMessages(convId) {
-    const {data}=await supabase.from("ai_messages").select("*").eq("conversation_id",convId).order("created_at",{ascending:true});
-    setMessages(data||[]);
-  }
-  async function newChat() {
-    const {data,error}=await supabase.from("ai_conversations").insert({user_id:userId,title:"New Chat"}).select().single();
-    if(!error){setConversations(prev=>[data,...prev]);setActiveConv(data);setMessages([]);setShowSidebar(false);}
-  }
-  async function selectConv(conv) {
-    setActiveConv(conv);await loadMessages(conv.id);setShowSidebar(false);
-  }
-  async function deleteConv(id) {
-    await supabase.from("ai_conversations").delete().eq("id",id);
-    setConversations(prev=>prev.filter(c=>c.id!==id));
-    if(activeConv?.id===id){setActiveConv(null);setMessages([]);}
-  }
-  async function archiveConv(id) {
-    const conv=conversations.find(c=>c.id===id);
-    await supabase.from("ai_conversations").update({archived:!conv.archived}).eq("id",id);
-    setConversations(prev=>prev.map(c=>c.id===id?{...c,archived:!c.archived}:c));
-  }
-  async function renameConv(id,title) {
-    await supabase.from("ai_conversations").update({title}).eq("id",id);
-    setConversations(prev=>prev.map(c=>c.id===id?{...c,title}:c));
-    setEditingTitle(null);
-  }
-  async function autoName(convId,firstMessage) {
-    const title=firstMessage.slice(0,40)+(firstMessage.length>40?"...":"");
-    await renameConv(convId,title);
-  }
-
-  function buildContext() {
-    const avgAtt=subjects.length?Math.round(subjects.reduce((s,sub)=>s+att(sub.attended||0,sub.total||0),0)/subjects.length):0;
-    const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75).map(s=>s.name);
-    const pending=assignments.filter(a=>a.status!=="submitted").length;
-    const upcoming=exams.filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,3);
-    const subjectDetails=subjects.map(s=>`${s.name}: ${s.attended||0}/${s.total||0} (${att(s.attended||0,s.total||0)}%)`).join(", ");
-    return `You are an academic AI assistant built into StudentOS for BHMS students at Monark Homoeopathic Medical College, Vahelal (Monark University).
-
-STUDENT: ${profile?.name||"Student"} | ${profile?.program||"BHMS"} | ${profile?.semester||"2nd"} Semester
-
-ATTENDANCE: Average ${avgAtt}% ${avgAtt<75?"⚠️ BELOW 75%":"✓"}
-Subjects: ${subjectDetails||"None"}
-Low attendance: ${lowAtt.join(", ")||"None"}
-
-ASSIGNMENTS: ${pending} pending
-UPCOMING EXAMS: ${upcoming.map(e=>`${e.subject} in ${daysLeft(e.date)} days`).join(", ")||"None"}
-
-BHMS 2nd YEAR: Organon, Materia Medica/HMM, Pathology, FMT, Surgery, Gynaecology, POM, Repertory, Yoga
-NCH: Min 75% attendance. With medical cert: 65% may be condoned.
-MARKING: Theory 150, Practical 100, Internal 50. Pass: 50% each.
-
-Be concise, helpful, personalized. Use student data when relevant. Answer all academic questions freely.`;
-  }
-
-  async function send() {
-    if(!input.trim()||loading) return;
-    if(!activeConv){await newChat();return;}
-    const userText=input.trim();
-    setInput("");
-    const userMsg={role:"user",content:userText,conversation_id:activeConv.id,user_id:userId};
-    const {data:savedUser}=await supabase.from("ai_messages").insert(userMsg).select().single();
-    setMessages(prev=>[...prev,savedUser]);
-    if(messages.length===0&&activeConv.title==="New Chat") autoName(activeConv.id,userText);
-    setLoading(true);
-    const history=messages.map(m=>({role:m.role==="user"?"user":"assistant",content:m.content}));
-    history.push({role:"user",content:userText});
-    try {
-      const res=await fetch(`https://mwzpfrroagrhuenpdclt.supabase.co/functions/v1/ai-chat`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json","Authorization":`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13enBmcnJvYWdyaHVlbnBkY2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NzU5NDgsImV4cCI6MjA5NTU1MTk0OH0.1XaAfisI75Iafk_tvGRoQNXDXYTzR7Zqsowl2Fb_dM4`},
-        body:JSON.stringify({message:userText,context:buildContext(),history}),
-      });
-      const data=await res.json();
-      if(data.reply){
-        const aiMsg={role:"ai",content:data.reply,conversation_id:activeConv.id,user_id:userId};
-        const {data:savedAi}=await supabase.from("ai_messages").insert(aiMsg).select().single();
-        setMessages(prev=>[...prev,savedAi]);
-        await supabase.from("ai_conversations").update({updated_at:new Date().toISOString()}).eq("id",activeConv.id);
-        setConversations(prev=>prev.map(c=>c.id===activeConv.id?{...c,updated_at:new Date().toISOString()}:c));
-      }
-    } catch(e){
-      setMessages(prev=>[...prev,{role:"ai",content:"Connection error. Please try again.",id:"err"}]);
-    }
-    setLoading(false);
-  }
-
-  const activeConvs=conversations.filter(c=>!c.archived);
-  const archivedConvs=conversations.filter(c=>c.archived);
-  const quickPrompts=["Analyze my attendance","What should I study next?","Explain Organon basics","Create a study plan","Help me prepare for exams"];
-
-  // Sidebar component (used in both desktop and mobile drawer)
-  const SidebarContent=()=>(
-    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      <button onClick={newChat} style={{
-        width:"100%",padding:"11px 0",background:C.accent,border:"none",
-        color:"#000",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",
-        fontFamily:F,marginBottom:12,flexShrink:0,
-      }}>+ New Chat</button>
-      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:4}}>
-        {activeConvs.length===0&&<div style={{color:C.muted,fontSize:12,textAlign:"center",padding:"24px 8px"}}>No conversations yet</div>}
-        {activeConvs.map(conv=>(
-          <div key={conv.id} onClick={()=>selectConv(conv)} style={{
-            padding:"10px 12px",borderRadius:10,
-            background:activeConv?.id===conv.id?C.accentDim:C.surface,
-            border:`1px solid ${activeConv?.id===conv.id?C.accent+"44":C.border}`,
-            cursor:"pointer",transition:"all 0.15s",
-          }}>
-            {editingTitle===conv.id?(
-              <input value={newTitle} onChange={e=>setNewTitle(e.target.value)}
-                onKeyDown={e=>{if(e.key==="Enter")renameConv(conv.id,newTitle);if(e.key==="Escape")setEditingTitle(null);}}
-                autoFocus onClick={e=>e.stopPropagation()}
-                style={{width:"100%",background:"transparent",border:"none",color:C.text,fontSize:12,fontFamily:F,outline:"none"}}/>
-            ):(
-              <div style={{fontSize:12,fontWeight:activeConv?.id===conv.id?600:400,color:activeConv?.id===conv.id?C.accent:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginBottom:6}}>{conv.title}</div>
-            )}
-            <div style={{display:"flex",gap:4}}>
-              <button onClick={e=>{e.stopPropagation();setEditingTitle(conv.id);setNewTitle(conv.title);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:11,padding:"2px 4px",fontFamily:F,borderRadius:4}}>✏️</button>
-              <button onClick={e=>{e.stopPropagation();archiveConv(conv.id);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:11,padding:"2px 4px",fontFamily:F,borderRadius:4}}>📦</button>
-              <button onClick={e=>{e.stopPropagation();if(confirm("Delete?"))deleteConv(conv.id);}} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:11,padding:"2px 4px",fontFamily:F,borderRadius:4}}>🗑️</button>
-            </div>
-          </div>
-        ))}
-        {archivedConvs.length>0&&(
-          <div style={{marginTop:8}}>
-            <button onClick={()=>setShowArchived(!showArchived)} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:F,padding:"4px 0",width:"100%",textAlign:"left"}}>
-              {showArchived?"▼":"►"} Archived ({archivedConvs.length})
-            </button>
-            {showArchived&&archivedConvs.map(conv=>(
-              <div key={conv.id} onClick={()=>selectConv(conv)} style={{padding:"8px 10px",borderRadius:8,background:C.surface,border:`1px solid ${C.border}`,marginTop:4,cursor:"pointer",opacity:0.6}}>
-                <div style={{fontSize:11,color:C.muted,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginBottom:4}}>{conv.title}</div>
-                <div style={{display:"flex",gap:4}}>
-                  <button onClick={e=>{e.stopPropagation();archiveConv(conv.id);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,fontFamily:F}}>↩️</button>
-                  <button onClick={e=>{e.stopPropagation();if(confirm("Delete?"))deleteConv(conv.id);}} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:10,fontFamily:F}}>🗑️</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{animation:"fadeUp 0.3s ease",height:"calc(100vh - 100px)",display:"flex",flexDirection:"column",maxWidth:900,position:"relative"}}>
-      {/* Mobile sidebar drawer */}
-      {showSidebar&&(
-        <>
-          <div onClick={()=>setShowSidebar(false)} style={{position:"fixed",inset:0,background:"#00000077",zIndex:200}}/>
-          <div style={{position:"fixed",top:0,left:0,bottom:0,width:280,background:C.surface,borderRight:`1px solid ${C.border}`,zIndex:201,padding:20,overflowY:"auto",animation:"fadeUp 0.2s ease"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-              <div style={{fontSize:14,fontWeight:700}}>Conversations</div>
-              <button onClick={()=>setShowSidebar(false)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:20}}>×</button>
-            </div>
-            <SidebarContent/>
-          </div>
-        </>
-      )}
-
-      {/* Main layout */}
-      <div style={{display:"flex",gap:16,flex:1,minHeight:0}}>
-        {/* Desktop sidebar */}
-        <div style={{width:220,flexShrink:0,display:"flex",flexDirection:"column"}} className="desktop-sidebar">
-          <SidebarContent/>
-        </div>
-
-        {/* Chat area */}
-        <div style={{flex:1,display:"flex",flexDirection:"column",minWidth:0}}>
-          {/* Chat header */}
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexShrink:0}}>
-            <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <button onClick={()=>setShowSidebar(true)} style={{
-                background:C.card,border:`1px solid ${C.border}`,color:C.muted,
-                borderRadius:10,padding:"6px 10px",cursor:"pointer",fontSize:16,lineHeight:1,
-              }} className="bottom-nav-visible">☰</button>
-              <div style={{fontSize:15,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{activeConv?.title||"AI Assistant ✦"}</div>
-            </div>
-            <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
-              <div style={{width:7,height:7,borderRadius:"50%",background:C.accent,animation:"pulse 2s infinite"}}/>
-              <span style={{fontSize:11,color:C.accentText,fontWeight:600}}>Groq AI</span>
-            </div>
-          </div>
-
-          {/* Messages */}
-          {!activeConv?(
-            <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16,padding:"0 20px"}}>
-              <div style={{width:56,height:56,borderRadius:16,background:C.accentDim,border:`1px solid ${C.accent}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>✦</div>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:17,fontWeight:700,marginBottom:6}}>Your Academic AI</div>
-                <div style={{fontSize:13,color:C.muted,lineHeight:1.6}}>Ask questions, get study plans, explain concepts, analyze your performance</div>
-              </div>
-              <div style={{display:"flex",flexWrap:"wrap",gap:8,justifyContent:"center",maxWidth:400}}>
-                {quickPrompts.map(q=>(
-                  <button key={q} onClick={async()=>{const conv=await supabase.from("ai_conversations").insert({user_id:userId,title:"New Chat"}).select().single();if(!conv.error){setConversations(prev=>[conv.data,...prev]);setActiveConv(conv.data);setMessages([]);setInput(q);}}} style={{
-                    padding:"8px 14px",background:C.card,border:`1px solid ${C.border}`,
-                    color:C.muted,fontSize:12,borderRadius:20,cursor:"pointer",fontFamily:F,
-                    transition:"all 0.15s",
-                  }}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.color=C.accent;}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.color=C.muted;}}>
-                    {q}
-                  </button>
-                ))}
-              </div>
-              <button onClick={newChat} style={{background:C.accent,border:"none",color:"#000",padding:"11px 28px",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:F}}>Start New Chat</button>
-            </div>
-          ):(
-            <>
-              <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:12,paddingBottom:16,paddingRight:4}}>
-                {messages.length===0&&<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"32px 0"}}>Send a message to start</div>}
-                {messages.map((m,i)=>(
-                  <div key={m.id||i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",alignItems:"flex-end",gap:8}}>
-                    {m.role==="ai"&&(
-                      <div style={{width:28,height:28,borderRadius:8,background:C.accentDim,border:`1px solid ${C.accent}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0}}>✦</div>
-                    )}
-                    <div style={{
-                      maxWidth:"78%",padding:"11px 15px",
-                      borderRadius:m.role==="user"?"18px 18px 4px 18px":"18px 18px 18px 4px",
-                      background:m.role==="user"?C.accent:C.card,
-                      color:m.role==="user"?"#000":C.text,
-                      fontSize:13,lineHeight:1.65,
-                      border:m.role==="ai"?`1px solid ${C.border}`:"none",
-                      whiteSpace:"pre-wrap",wordBreak:"break-word",
-                    }}>{m.content}</div>
-                  </div>
-                ))}
-                {loading&&(
-                  <div style={{display:"flex",alignItems:"flex-end",gap:8}}>
-                    <div style={{width:28,height:28,borderRadius:8,background:C.accentDim,border:`1px solid ${C.accent}33`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>✦</div>
-                    <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"18px 18px 18px 4px",padding:"12px 16px"}}>
-                      <div style={{display:"flex",gap:5,alignItems:"center"}}>
-                        {[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:C.accent,animation:`pulse 1.4s ${i*0.2}s infinite`}}/>)}
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <div ref={bottomRef}/>
-              </div>
-              {/* Input */}
-              <div style={{flexShrink:0,paddingTop:10,display:"flex",gap:8,alignItems:"flex-end"}}>
-                <input ref={inputRef} placeholder="Ask anything about your studies..." value={input}
-                  onChange={e=>setInput(e.target.value)}
-                  onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
-                  style={{
-                    flex:1,background:C.card,border:`1px solid ${C.border}`,color:C.text,
-                    padding:"12px 16px",borderRadius:14,fontSize:13,fontFamily:F,outline:"none",
-                    transition:"border-color 0.2s",
-                  }}
-                  onFocus={e=>e.target.style.borderColor=C.accent}
-                  onBlur={e=>e.target.style.borderColor=C.border}/>
-                <button onClick={send} disabled={loading||!input.trim()} style={{
-                  padding:"12px 20px",background:input.trim()&&!loading?C.accent:C.accentDim,
-                  border:"none",color:input.trim()&&!loading?"#000":C.muted,
-                  borderRadius:14,fontSize:13,fontWeight:700,cursor:loading||!input.trim()?"not-allowed":"pointer",
-                  fontFamily:F,flexShrink:0,transition:"all 0.2s",
-                }}>{loading?"...":"Send"}</button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Timetable ─────────────────────────────────────────────────────────────────
-function Timetable({timetable,setTimetable,userId,subjects}) {
-  const days=["Mon","Tue","Wed","Thu","Fri","Sat"];
-  const todayKey=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date().getDay()];
-  const [activeDay,setActiveDay]=useState(days.includes(todayKey)?todayKey:"Mon");
-  const [showAdd,setShowAdd]=useState(false);
-  const [newC,setNewC]=useState({subject:"",room:"",time:"",duration:1});
-  const subCol=Object.fromEntries(subjects.map(s=>[s.name,s.color||C.accent]));
-
-  async function add() {
-    if(!newC.subject||!newC.time) return;
-    const {data,error}=await supabase.from("timetable").insert({user_id:userId,...newC,day:activeDay}).select().single();
-    if(!error){setTimetable(prev=>({...prev,[activeDay]:[...(prev[activeDay]||[]),data]}));setNewC({subject:"",room:"",time:"",duration:1});setShowAdd(false);}
-  }
-  async function del(id) {
-    await supabase.from("timetable").delete().eq("id",id);
-    setTimetable(prev=>{const u={...prev};u[activeDay]=(u[activeDay]||[]).filter(c=>c.id!==id);return u;});
-  }
-
-  const dayClasses=timetable[activeDay]||[];
-  const totalClasses=days.reduce((sum,d)=>sum+(timetable[d]||[]).length,0);
-
-  return (
-    <div style={{animation:"fadeUp 0.3s ease",maxWidth:900}}>
-      {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-        <div>
-          <h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:2}}>Timetable</h2>
-          <div style={{fontSize:13,color:C.muted}}>{totalClasses} classes scheduled this week</div>
-        </div>
-        <button onClick={()=>setShowAdd(!showAdd)} style={{
-          background:showAdd?C.surface:C.accent,border:`1px solid ${showAdd?C.border:C.accent}`,
-          color:showAdd?C.muted:"#000",padding:"9px 18px",borderRadius:12,fontSize:13,
-          fontWeight:700,cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
-        }}>{showAdd?"✕ Cancel":"+ Add Class"}</button>
-      </div>
-
-      {/* Day selector */}
-      <div style={{display:"flex",gap:6,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
-        {days.map(d=>{
-          const isToday=d===todayKey;
-          const isActive=d===activeDay;
-          const count=(timetable[d]||[]).length;
-          return(
-            <button key={d} onClick={()=>setActiveDay(d)} style={{
-              flex:"0 0 auto",minWidth:60,padding:"10px 8px",
-              background:isActive?C.accent:C.card,
-              border:`1px solid ${isActive?C.accent:isToday?C.accent+"44":C.border}`,
-              color:isActive?"#000":isToday?C.accent:C.muted,
-              borderRadius:14,cursor:"pointer",fontFamily:F,
-              transition:"all 0.2s ease",textAlign:"center",
-            }}>
-              <div style={{fontSize:13,fontWeight:isActive||isToday?700:500}}>{d}</div>
-              {isToday&&<div style={{fontSize:9,marginTop:2,opacity:0.7,color:isActive?"#000":C.accent}}>today</div>}
-              {count>0&&<div style={{
-                marginTop:4,width:18,height:18,borderRadius:"50%",
-                background:isActive?"#00000022":C.accentDim,
-                color:isActive?"#000":C.accent,
-                fontSize:9,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",
-                margin:"4px auto 0",
-              }}>{count}</div>}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Add form */}
-      {showAdd&&(
-        <div style={{background:C.surface,border:`1px solid ${C.accent}44`,borderRadius:16,padding:20,marginBottom:20,animation:"fadeUp 0.2s ease both"}}>
-          <div style={{fontSize:13,fontWeight:700,marginBottom:14,color:C.accentText}}>Add Class — {activeDay}</div>
-          <input placeholder="Subject name *" value={newC.subject} onChange={e=>setNewC(p=>({...p,subject:e.target.value}))}
-            style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",marginBottom:10}}/>
-          {subjects.length>0&&(
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:10}}>
-              {subjects.map(s=>(
-                <button key={s.id} onClick={()=>setNewC(p=>({...p,subject:s.name}))} style={{
-                  padding:"5px 12px",background:newC.subject===s.name?s.color||C.accent:C.card,
-                  border:`1px solid ${newC.subject===s.name?s.color||C.accent:C.border}`,
-                  color:newC.subject===s.name?"#000":C.muted,fontSize:11,borderRadius:8,cursor:"pointer",fontFamily:F,
-                }}>{s.name}</button>
-              ))}
-            </div>
-          )}
-          <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
-            <input type="time" value={newC.time} onChange={e=>setNewC(p=>({...p,time:e.target.value}))}
-              style={{flex:"1 1 100px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
-            <input placeholder="Room (optional)" value={newC.room} onChange={e=>setNewC(p=>({...p,room:e.target.value}))}
-              style={{flex:"2 1 120px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
-          </div>
-          <div style={{display:"flex",gap:8,marginBottom:14}}>
-            {[1,2,3].map(d=>(
-              <button key={d} onClick={()=>setNewC(p=>({...p,duration:d}))} style={{
-                flex:1,padding:"8px 0",background:newC.duration===d?C.accent:C.card,
-                border:`1px solid ${newC.duration===d?C.accent:C.border}`,
-                color:newC.duration===d?"#000":C.muted,borderRadius:10,fontSize:12,
-                fontWeight:600,cursor:"pointer",fontFamily:F,transition:"all 0.2s",
-              }}>{d}h</button>
-            ))}
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={add} style={{background:C.accent,border:"none",color:"#000",padding:"10px 20px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Class</button>
-            <button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"10px 16px",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F}}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Timeline */}
-      {dayClasses.length===0
-        ?<div style={{textAlign:"center",padding:"48px 20px",background:C.card,border:`1px solid ${C.border}`,borderRadius:20}}>
-          <div style={{fontSize:40,marginBottom:12}}>📖</div>
-          <div style={{fontSize:15,fontWeight:700,marginBottom:6}}>No classes for {activeDay}</div>
-          <div style={{fontSize:13,color:C.muted,marginBottom:16}}>Add your first class for this day</div>
-          <button onClick={()=>setShowAdd(true)} style={{background:C.accent,border:"none",color:"#000",padding:"9px 20px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Class</button>
-        </div>
-        :<div style={{position:"relative",paddingLeft:56}}>
-          <div style={{position:"absolute",left:20,top:8,bottom:8,width:2,background:`linear-gradient(180deg,${C.accent}44,${C.border})`}}/>
-          {[...dayClasses].sort((a,b)=>a.time.localeCompare(b.time)).map((cls,i)=>{
-            const col=subCol[cls.subject]||SCOLS[i%SCOLS.length];
-            return(
-              <div key={cls.id||i} style={{position:"relative",marginBottom:14,animation:`fadeUp 0.3s ease ${i*0.06}s both`}}>
-                <div style={{position:"absolute",left:-44,top:14,fontSize:10,color:C.muted,fontFamily:M,width:38,textAlign:"right",lineHeight:1.2}}>{cls.time}</div>
-                <div style={{position:"absolute",left:-29,top:14,width:10,height:10,borderRadius:"50%",background:col,border:`2px solid ${C.bg}`,boxShadow:`0 0 0 2px ${col}44`}}/>
-                <div style={{
-                  background:C.card,borderRadius:14,padding:"14px 16px",
-                  borderLeft:`3px solid ${col}`,border:`1px solid ${C.border}`,
-                  borderLeftWidth:3,borderLeftColor:col,
-                  transition:"transform 0.15s ease",
-                }}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                    <div>
-                      <div style={{fontSize:14,fontWeight:600,marginBottom:4}}>{cls.subject}</div>
-                      <div style={{display:"flex",gap:12,fontSize:11,color:C.muted}}>
-                        {cls.room&&<span>📍 {cls.room}</span>}
-                        <span>⏱ {cls.duration}h</span>
-                      </div>
-                    </div>
-                    <button onClick={()=>del(cls.id)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:"2px",lineHeight:1,transition:"color 0.2s"}}
-                      onMouseEnter={e=>e.currentTarget.style.color=C.danger}
-                      onMouseLeave={e=>e.currentTarget.style.color=C.muted}>×</button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>}
-    </div>
-  );
-}
-
 // ── Study Guide ───────────────────────────────────────────────────────────────
 const BHMS_TOPICS = {
   "Organon": ["Aphorisms 1-10","Aphorisms 11-20","Aphorisms 21-30","Philosophy of Homoeopathy","Vital Force","Disease Classification","Drug Proving","Posology","Case Taking","Miasms"],
@@ -1384,37 +572,55 @@ function StudyGuide({subjects,exams,userId}) {
   const [showAdd,setShowAdd]=useState(false);
   const [tab,setTab]=useState("topics");
 
-  useEffect(()=>{loadTopics();},[userId]);
+  useEffect(()=>{
+    loadTopics();
+  },[userId]);
 
   async function loadTopics() {
     const {data}=await supabase.from("study_topics").select("*").eq("user_id",userId);
     if(data&&data.length>0){
       const grouped={};
-      data.forEach(t=>{if(!grouped[t.subject])grouped[t.subject]=[];grouped[t.subject].push(t);});
+      data.forEach(t=>{
+        if(!grouped[t.subject]) grouped[t.subject]=[];
+        grouped[t.subject].push(t);
+      });
       setTopics(grouped);
-    } else {await seedDefaults();}
+    } else {
+      await seedDefaults();
+    }
     setLoading(false);
   }
+
   async function seedDefaults() {
     const rows=[];
-    Object.entries(BHMS_TOPICS).forEach(([sub,tlist])=>{tlist.forEach(t=>rows.push({user_id:userId,subject:sub,topic:t,done:false}));});
+    Object.entries(BHMS_TOPICS).forEach(([sub,tlist])=>{
+      tlist.forEach(t=>rows.push({user_id:userId,subject:sub,topic:t,done:false}));
+    });
     const {data}=await supabase.from("study_topics").insert(rows).select();
-    if(data){const grouped={};data.forEach(t=>{if(!grouped[t.subject])grouped[t.subject]=[];grouped[t.subject].push(t);});setTopics(grouped);}
+    if(data){
+      const grouped={};
+      data.forEach(t=>{if(!grouped[t.subject])grouped[t.subject]=[];grouped[t.subject].push(t);});
+      setTopics(grouped);
+    }
   }
+
   async function toggleDone(t) {
     await supabase.from("study_topics").update({done:!t.done}).eq("id",t.id);
     setTopics(prev=>({...prev,[t.subject]:prev[t.subject].map(x=>x.id===t.id?{...x,done:!x.done}:x)}));
   }
+
   async function deleteTopic(t) {
     await supabase.from("study_topics").delete().eq("id",t.id);
     setTopics(prev=>({...prev,[t.subject]:prev[t.subject].filter(x=>x.id!==t.id)}));
   }
+
   async function addTopic() {
     if(!newTopic.trim()) return;
     const {data}=await supabase.from("study_topics").insert({user_id:userId,subject:selSubject,topic:newTopic.trim(),done:false}).select().single();
     if(data){setTopics(prev=>({...prev,[selSubject]:[...(prev[selSubject]||[]),data]}));}
     setNewTopic("");setShowAdd(false);
   }
+
   async function saveEdit(t) {
     if(!editText.trim()) return;
     await supabase.from("study_topics").update({topic:editText.trim()}).eq("id",t.id);
@@ -1426,212 +632,1166 @@ function StudyGuide({subjects,exams,userId}) {
   const done=currentTopics.filter(t=>t.done).length;
   const pct=currentTopics.length?Math.round((done/currentTopics.length)*100):0;
   const upcomingExams=[...exams].filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  const totalTopics=Object.values(topics).flat().length;
-  const totalDone=Object.values(topics).flat().filter(t=>t.done).length;
-  const overallPct=totalTopics?Math.round((totalDone/totalTopics)*100):0;
 
-  if(loading) return(
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",padding:60,flexDirection:"column",gap:12}}>
-      <div style={{width:40,height:40,borderRadius:10,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",animation:"pulse 1.5s infinite"}}>📖</div>
-      <div style={{color:C.muted,fontSize:13}}>Loading study guide...</div>
-    </div>
-  );
+  if(loading) return <div style={{textAlign:"center",padding:48,color:C.muted}}>Loading study guide...</div>;
 
   return (
-    <div style={{animation:"fadeUp 0.3s ease",maxWidth:900}}>
-      {/* Header */}
+    <div style={{animation:"fadeUp 0.3s ease"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-        <div>
-          <h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:2}}>Study Guide</h2>
-          <div style={{fontSize:13,color:C.muted}}>{totalDone}/{totalTopics} topics complete · {overallPct}% overall</div>
-        </div>
-        <div style={{display:"flex",gap:4,padding:4,background:C.surface,borderRadius:12,border:`1px solid ${C.border}`}}>
+        <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>Study Guide</h2>
+        <div style={{display:"flex",gap:8}}>
           {["topics","planner"].map(t=>(
-            <button key={t} onClick={()=>setTab(t)} style={{
-              padding:"7px 14px",background:tab===t?C.accent:"transparent",border:"none",
-              color:tab===t?"#000":C.muted,fontSize:12,fontWeight:tab===t?700:500,
-              borderRadius:9,cursor:"pointer",fontFamily:F,textTransform:"capitalize",transition:"all 0.2s",
-            }}>{t}</button>
+            <button key={t} onClick={()=>setTab(t)} style={{background:tab===t?C.accent:C.card,border:`1px solid ${tab===t?C.accent:C.border}`,color:tab===t?"#000":C.muted,fontSize:11,fontWeight:600,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:F,textTransform:"capitalize"}}>{t}</button>
           ))}
         </div>
       </div>
 
-      {tab==="topics"&&(
-        <>
-          {/* Overall progress */}
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:16,marginBottom:20}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
-              <div style={{fontSize:13,fontWeight:600}}>Overall Progress</div>
-              <div style={{fontFamily:M,fontSize:13,fontWeight:700,color:overallPct===100?C.accent:C.blue}}>{overallPct}%</div>
+      {tab==="topics"&&<>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+          {Object.keys(BHMS_TOPICS).map(sub=>{
+            const t=topics[sub]||[];
+            const d=t.filter(tp=>tp.done).length;
+            return <button key={sub} onClick={()=>setSelSubject(sub)} style={{background:selSubject===sub?C.accent:C.card,border:`1px solid ${selSubject===sub?C.accent:C.border}`,color:selSubject===sub?"#000":C.muted,fontSize:11,fontWeight:600,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontFamily:F}}>
+              {sub} {t.length>0&&<span style={{opacity:0.7}}>({d}/{t.length})</span>}
+            </button>;
+          })}
+        </div>
+        <Card style={{marginBottom:16}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+            <div style={{fontSize:14,fontWeight:700}}>{selSubject}</div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <div style={{fontSize:12,color:pct===100?C.accent:C.muted,fontFamily:M,fontWeight:600}}>{done}/{currentTopics.length}</div>
+              <Btn onClick={()=>setShowAdd(!showAdd)} style={{fontSize:11,padding:"4px 10px"}}>+ Add</Btn>
             </div>
-            <div style={{height:8,background:C.border,borderRadius:4,overflow:"hidden"}}>
-              <div style={{height:"100%",width:`${overallPct}%`,background:`linear-gradient(90deg,${C.accent},${C.blue})`,borderRadius:4,transition:"width 0.6s ease"}}/>
-            </div>
-            <div style={{fontSize:11,color:C.muted,marginTop:6}}>{totalDone} of {totalTopics} topics completed across all subjects</div>
           </div>
-
-          {/* Subject pills */}
-          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:16}}>
-            {Object.keys(BHMS_TOPICS).map(sub=>{
-              const t=topics[sub]||[];
-              const d=t.filter(tp=>tp.done).length;
-              const p=t.length?Math.round((d/t.length)*100):0;
-              const isSelected=selSubject===sub;
-              return(
-                <button key={sub} onClick={()=>setSelSubject(sub)} style={{
-                  padding:"7px 14px",
-                  background:isSelected?C.accent:C.card,
-                  border:`1px solid ${isSelected?C.accent:C.border}`,
-                  color:isSelected?"#000":C.muted,
-                  fontSize:12,fontWeight:isSelected?700:500,
-                  borderRadius:10,cursor:"pointer",fontFamily:F,
-                  display:"flex",alignItems:"center",gap:6,transition:"all 0.2s",
-                }}>
-                  {sub}
-                  <span style={{
-                    background:isSelected?"#00000022":p===100?C.accentDim:C.surface,
-                    color:isSelected?"#000":p===100?C.accent:C.muted,
-                    fontSize:10,padding:"1px 6px",borderRadius:6,fontFamily:M,fontWeight:700,
-                  }}>{d}/{t.length}</span>
-                </button>
-              );
-            })}
+          <div style={{height:6,background:C.border,borderRadius:3,marginBottom:16,overflow:"hidden"}}>
+            <div style={{height:"100%",width:`${pct}%`,background:pct===100?C.accent:C.blue,borderRadius:3,transition:"width 0.4s ease"}}/>
           </div>
-
-          {/* Topic card */}
-          <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-              <div>
-                <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>{selSubject}</div>
-                <div style={{fontSize:12,color:C.muted}}>{done}/{currentTopics.length} topics done</div>
-              </div>
-              <button onClick={()=>setShowAdd(!showAdd)} style={{
-                background:showAdd?C.surface:C.accentDim,border:`1px solid ${showAdd?C.border:C.accent+"44"}`,
-                color:showAdd?C.muted:C.accent,padding:"6px 14px",borderRadius:10,fontSize:12,
-                fontWeight:600,cursor:"pointer",fontFamily:F,
-              }}>{showAdd?"✕":"+ Add"}</button>
+          {showAdd&&(
+            <div style={{display:"flex",gap:8,marginBottom:12}}>
+              <Input placeholder="New topic name" value={newTopic} onChange={e=>setNewTopic(e.target.value)} style={{flex:1}}/>
+              <Btn onClick={addTopic}>Add</Btn>
+              <Btn onClick={()=>setShowAdd(false)} variant="ghost">✕</Btn>
             </div>
-
-            {/* Subject progress */}
-            <div style={{height:6,background:C.border,borderRadius:3,marginBottom:16,overflow:"hidden"}}>
-              <div style={{height:"100%",width:`${pct}%`,background:pct===100?C.accent:C.blue,borderRadius:3,transition:"width 0.5s ease"}}/>
-            </div>
-
-            {/* Add topic input */}
-            {showAdd&&(
-              <div style={{display:"flex",gap:8,marginBottom:14}}>
-                <input placeholder="New topic..." value={newTopic} onChange={e=>setNewTopic(e.target.value)}
-                  onKeyDown={e=>e.key==="Enter"&&addTopic()}
-                  autoFocus
-                  style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
-                <button onClick={addTopic} style={{background:C.accent,border:"none",color:"#000",padding:"9px 16px",borderRadius:10,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add</button>
-                <button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"9px 12px",borderRadius:10,fontSize:12,cursor:"pointer",fontFamily:F}}>✕</button>
+          )}
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {currentTopics.map(topic=>(
+              <div key={topic.id}>
+                {editingId===topic.id?(
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <Input value={editText} onChange={e=>setEditText(e.target.value)} style={{flex:1}}/>
+                    <Btn onClick={()=>saveEdit(topic)} style={{fontSize:11,padding:"5px 10px"}}>Save</Btn>
+                    <Btn onClick={()=>setEditingId(null)} variant="ghost" style={{fontSize:11,padding:"5px 8px"}}>✕</Btn>
+                  </div>
+                ):(
+                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:topic.done?C.accentDim:C.surface,borderRadius:10,border:`1px solid ${topic.done?C.accent+"44":C.border}`}}>
+                    <div onClick={()=>toggleDone(topic)} style={{width:20,height:20,borderRadius:6,background:topic.done?C.accent:C.border,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:12,color:"#000",fontWeight:700,cursor:"pointer"}}>{topic.done?"✓":""}</div>
+                    <span onClick={()=>toggleDone(topic)} style={{flex:1,fontSize:13,color:topic.done?C.accentText:C.text,textDecoration:topic.done?"line-through":"none",cursor:"pointer"}}>{topic.topic}</span>
+                    <button onClick={()=>{setEditingId(topic.id);setEditText(topic.topic);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:14,padding:"2px 4px"}}>✎</button>
+                    <button onClick={()=>deleteTopic(topic)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:"2px 4px"}}>×</button>
+                  </div>
+                )}
               </div>
-            )}
+            ))}
+          </div>
+        </Card>
+      </>}
 
-            {/* Topics list */}
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
-              {currentTopics.map((topic,i)=>(
-                <div key={topic.id}>
-                  {editingId===topic.id?(
-                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                      <input value={editText} onChange={e=>setEditText(e.target.value)}
-                        onKeyDown={e=>e.key==="Enter"&&saveEdit(topic)}
-                        autoFocus style={{flex:1,background:C.surface,border:`1px solid ${C.accent}44`,color:C.text,padding:"8px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
-                      <button onClick={()=>saveEdit(topic)} style={{background:C.accent,border:"none",color:"#000",padding:"8px 14px",borderRadius:8,fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:F}}>Save</button>
-                      <button onClick={()=>setEditingId(null)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"8px 10px",borderRadius:8,fontSize:12,cursor:"pointer",fontFamily:F}}>✕</button>
-                    </div>
-                  ):(
-                    <div style={{
-                      display:"flex",alignItems:"center",gap:10,padding:"10px 12px",
-                      background:topic.done?C.accentDim:C.surface,borderRadius:12,
-                      border:`1px solid ${topic.done?C.accent+"33":C.border}`,
-                      animation:`fadeUp 0.2s ease ${i*0.02}s both`,
-                      transition:"background 0.2s ease",
-                    }}>
-                      <div onClick={()=>toggleDone(topic)} style={{
-                        width:22,height:22,borderRadius:7,flexShrink:0,cursor:"pointer",
-                        background:topic.done?C.accent:C.border,
+      {tab==="planner"&&<>
+        {upcomingExams.length===0?<Card style={{textAlign:"center",padding:48}}><div style={{fontSize:32,marginBottom:12}}>📅</div><div style={{color:C.muted,fontSize:14}}>No upcoming exams. Add exams to get a study plan!</div></Card>
+        :<div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {upcomingExams.slice(0,5).map(e=>{
+            const d=daysLeft(e.date);
+            const subKey=Object.keys(BHMS_TOPICS).find(k=>e.subject.toLowerCase().includes(k.toLowerCase()))||null;
+            const subTopics=subKey?(topics[subKey]||[]):[];
+            const pending=subTopics.filter(t=>!t.done);
+            const hoursPerDay=pending.length>0&&d>0?Math.ceil((pending.length*0.5)/d):0;
+            const urgency=d<=7?C.danger:d<=14?C.warn:C.blue;
+            return <Card key={e.id} glow={urgency}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
+                <div>
+                  <div style={{fontSize:15,fontWeight:700,marginBottom:4}}>{e.subject}</div>
+                  <Badge color={urgency} bg={`${urgency}22`}>{e.type} · {e.date}</Badge>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontFamily:M,fontSize:28,fontWeight:700,color:urgency,lineHeight:1}}>{d}</div>
+                  <div style={{fontSize:10,color:C.muted}}>days left</div>
+                </div>
+              </div>
+              {subKey&&<>
+                <div style={{fontSize:11,color:C.muted,marginBottom:8}}>{pending.length} topics pending · ~{hoursPerDay}h/day recommended</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {pending.slice(0,5).map(t=><span key={t.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:11,color:C.muted}}>{t.topic}</span>)}
+                  {pending.length>5&&<span style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:11,color:C.muted}}>+{pending.length-5} more</span>}
+                </div>
+              </>}
+            </Card>;
+          })}
+        </div>}
+      </>}
+    </div>
+  );
+}
+
+function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
+  const [showAdd,setShowAdd]=useState(false);
+  const [newS,setNewS]=useState({name:"",code:""});
+  const [duration,setDuration]=useState("overall");
+  const [customFrom,setCustomFrom]=useState("");
+  const [customTo,setCustomTo]=useState("");
+  const [editingSub,setEditingSub]=useState(null);
+  const [editVals,setEditVals]=useState({attended:"",total:""});
+
+  function getRange() {
+    const now=new Date(); now.setHours(23,59,59,999);
+    const from=new Date();
+    if(duration==="weekly"){from.setDate(now.getDate()-7);}
+    else if(duration==="monthly"){from.setMonth(now.getMonth()-1);}
+    else if(duration==="quarterly"){from.setMonth(now.getMonth()-3);}
+    else if(duration==="custom"&&customFrom&&customTo){return {from:new Date(customFrom),to:new Date(customTo)};}
+    else{return null;}
+    from.setHours(0,0,0,0);
+    return {from,to:now};
+  }
+
+  function subjectStats(sub) {
+    const range=getRange();
+    if(!range) return {attended:sub.attended||0,total:sub.total||0};
+    const logs=attLogs.filter(l=>l.subject_id===sub.id);
+    const filtered=logs.filter(l=>{const d=new Date(l.date);return d>=range.from&&d<=range.to;});
+    return {attended:filtered.filter(l=>l.status==="present").length,total:filtered.length};
+  }
+
+  async function markClass(sub,status) {
+    const today=new Date().toISOString().split("T")[0];
+    const {data,error}=await supabase.from("attendance_log").insert({user_id:userId,subject_id:sub.id,date:today,status}).select().single();
+    if(!error){
+      setAttLogs(prev=>[...prev,data]);
+      const updates={attended:(sub.attended||0)+(status==="present"?1:0),total:(sub.total||0)+1};
+      await supabase.from("subjects").update(updates).eq("id",sub.id);
+      setSubjects(prev=>prev.map(s=>s.id===sub.id?{...s,...updates}:s));
+    }
+  }
+
+  async function saveManualEdit(sub) {
+    const attended=parseInt(editVals.attended)||0;
+    const total=parseInt(editVals.total)||0;
+    await supabase.from("subjects").update({attended,total}).eq("id",sub.id);
+    setSubjects(prev=>prev.map(s=>s.id===sub.id?{...s,attended,total}:s));
+    setEditingSub(null);
+  }
+
+  async function addSubject() {
+    if(!newS.name) return;
+    const color=SCOLS[subjects.length%SCOLS.length];
+    const {data,error}=await supabase.from("subjects").insert({user_id:userId,...newS,attended:0,total:0,color}).select().single();
+    if(!error){setSubjects(prev=>[...prev,data]);setNewS({name:"",code:""});setShowAdd(false);}
+  }
+
+  async function deleteSubject(id) {
+    await supabase.from("subjects").delete().eq("id",id);
+    await supabase.from("attendance_log").delete().eq("subject_id",id);
+    setSubjects(prev=>prev.filter(s=>s.id!==id));
+    setAttLogs(prev=>prev.filter(l=>l.subject_id!==id));
+  }
+
+  function buildChartData(sub) {
+    const logs=attLogs.filter(l=>l.subject_id===sub.id);
+    if(logs.length===0) return [];
+    if(duration==="weekly"){
+      const days=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+      return days.map((d,i)=>{
+        const date=new Date(); date.setDate(date.getDate()-date.getDay()+i+1);
+        const ds=date.toISOString().split("T")[0];
+        const dayLogs=logs.filter(l=>l.date===ds);
+        return {label:d,value:dayLogs.length>0?Math.round((dayLogs.filter(l=>l.status==="present").length/dayLogs.length)*100):0};
+      });
+    }
+    if(duration==="monthly"||duration==="quarterly"){
+      const weeks=duration==="monthly"?4:12;
+      return Array.from({length:weeks},(_,i)=>{
+        const to=new Date(); to.setDate(to.getDate()-i*7);
+        const from=new Date(to); from.setDate(from.getDate()-6);
+        const wLogs=logs.filter(l=>{const d=new Date(l.date);return d>=from&&d<=to;});
+        return {label:`W${weeks-i}`,value:wLogs.length>0?Math.round((wLogs.filter(l=>l.status==="present").length/wLogs.length)*100):0};
+      }).reverse();
+    }
+    return [];
+  }
+
+  const showChart=duration!=="overall"&&duration!=="custom";
+  const durations=["overall","weekly","monthly","quarterly","custom"];
+
+  // Overall stats
+  const totalSubjects=subjects.length;
+  const goodSubjects=subjects.filter(s=>att(s.attended||0,s.total||0)>=75).length;
+  const avgAttendance=subjects.length?Math.round(subjects.reduce((s,sub)=>s+att(sub.attended||0,sub.total||0),0)/subjects.length):0;
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease",maxWidth:900}}>
+
+      {/* Header */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <div>
+<h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:2,paddingTop:4}}>Attendance</h2>        </div>
+        <button onClick={()=>setShowAdd(!showAdd)} style={{
+          display:"flex",alignItems:"center",gap:6,
+          background:showAdd?C.surface:C.accent,
+          border:`1px solid ${showAdd?C.border:C.accent}`,
+          color:showAdd?C.muted:"#000",
+          padding:"9px 16px",borderRadius:12,fontSize:13,fontWeight:700,
+          cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
+        }}>
+          {showAdd?"✕ Cancel":"+ Subject"}
+        </button>
+      </div>
+
+      {/* Summary strip */}
+      {subjects.length>0&&(
+        <div style={{
+          display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20,
+          animation:"fadeUp 0.3s ease 0.05s both",
+        }}>
+          {[
+            {label:"Avg Attendance",value:`${avgAttendance}%`,color:avgAttendance>=75?C.accent:C.danger,bg:avgAttendance>=75?C.accentDim:C.dangerDim},
+            {label:"Subjects OK",value:`${goodSubjects}/${totalSubjects}`,color:C.blue,bg:C.blueDim},
+            {label:"Need Attention",value:totalSubjects-goodSubjects,color:totalSubjects-goodSubjects>0?C.warn:C.accent,bg:totalSubjects-goodSubjects>0?C.warnDim:C.accentDim},
+          ].map(s=>(
+            <div key={s.label} style={{background:s.bg,border:`1px solid ${s.color}22`,borderRadius:14,padding:"12px 14px"}}>
+              <div style={{fontFamily:M,fontSize:22,fontWeight:700,color:s.color,lineHeight:1,marginBottom:4}}>{s.value}</div>
+              <div style={{fontSize:11,color:C.muted,fontWeight:500,textTransform:"uppercase",letterSpacing:"0.05em"}}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add Subject Form */}
+      {showAdd&&(
+        <div style={{
+          background:C.surface,border:`1px solid ${C.accent}44`,borderRadius:16,
+          padding:20,marginBottom:20,animation:"fadeUp 0.2s ease both",
+        }}>
+          <div style={{fontSize:13,fontWeight:700,marginBottom:14,color:C.accentText}}>Add New Subject</div>
+          <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
+            <input placeholder="Subject name" value={newS.name} onChange={e=>setNewS(p=>({...p,name:e.target.value}))}
+              onKeyDown={e=>e.key==="Enter"&&addSubject()}
+              style={{flex:"2 1 160px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
+            <input placeholder="Code (optional)" value={newS.code} onChange={e=>setNewS(p=>({...p,code:e.target.value}))}
+              style={{flex:"1 1 100px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={addSubject} style={{background:C.accent,border:"none",color:"#000",padding:"9px 20px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Subject</button>
+            <button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"9px 16px",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F}}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Duration Selector */}
+      <div style={{
+        display:"flex",gap:4,marginBottom:20,padding:4,
+        background:C.surface,borderRadius:14,border:`1px solid ${C.border}`,
+        overflowX:"auto",flexShrink:0,
+      }}>
+        {durations.map(d=>(
+          <button key={d} onClick={()=>setDuration(d)} style={{
+            flex:"0 0 auto",padding:"7px 16px",
+            background:duration===d?C.accent:"transparent",
+            border:"none",
+            color:duration===d?"#000":C.muted,
+            fontSize:12,fontWeight:duration===d?700:500,
+            borderRadius:10,cursor:"pointer",fontFamily:F,
+            textTransform:"capitalize",whiteSpace:"nowrap",
+            transition:"all 0.2s ease",
+          }}>{d}</button>
+        ))}
+      </div>
+
+      {/* Custom Range */}
+      {duration==="custom"&&(
+        <div style={{
+          display:"flex",gap:10,flexWrap:"wrap",marginBottom:20,
+          padding:16,background:C.surface,borderRadius:14,border:`1px solid ${C.border}`,
+        }}>
+          <div style={{flex:1,minWidth:140}}>
+            <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>From</div>
+            <input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}
+              style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
+          </div>
+          <div style={{flex:1,minWidth:140}}>
+            <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>To</div>
+            <input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)}
+              style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
+          </div>
+        </div>
+      )}
+
+      {/* Subject List */}
+      {subjects.length===0
+        ?<div style={{
+          textAlign:"center",padding:"60px 20px",
+          background:C.card,border:`1px solid ${C.border}`,borderRadius:20,
+        }}>
+          <div style={{fontSize:48,marginBottom:16}}>📚</div>
+          <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>No subjects yet</div>
+          <div style={{fontSize:13,color:C.muted,marginBottom:20}}>Add your first subject to start tracking attendance</div>
+          <button onClick={()=>setShowAdd(true)} style={{background:C.accent,border:"none",color:"#000",padding:"10px 24px",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Subject</button>
+        </div>
+        :<div style={{display:"flex",flexDirection:"column",gap:14}}>
+          {subjects.map((sub,idx)=>{
+            const {attended,total}=subjectStats(sub);
+            const p=att(attended,total);
+            const needed=p<75&&total>0?Math.ceil((0.75*total-attended)/0.25):0;
+            const canMiss=p>=75&&total>0?Math.floor((attended-0.75*total)/0.75):0;
+            const chartData=showChart?buildChartData(sub):[];
+            const isLow=p<75&&total>0;
+            const col=sub.color||SCOLS[idx%SCOLS.length];
+            const statusColor=p>=75?C.accent:p>=60?C.warn:C.danger;
+
+            return(
+              <div key={sub.id} style={{
+                background:C.card,
+                border:`1px solid ${isLow?C.danger+"44":C.border}`,
+                borderRadius:20,overflow:"hidden",
+                boxShadow:isLow?`0 0 20px ${C.danger}11`:"none",
+                animation:`fadeUp 0.3s ease ${idx*0.05}s both`,
+                transition:"box-shadow 0.2s ease",
+              }}>
+                {/* Top accent line */}
+                <div style={{height:3,background:`linear-gradient(90deg,${col} ${p}%,${C.border} ${p}%)`,transition:"background 0.6s ease"}}/>
+
+                <div style={{padding:20}}>
+                  {/* Subject header */}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+                    <div style={{display:"flex",alignItems:"center",gap:12}}>
+                      <div style={{
+                        width:44,height:44,borderRadius:12,
+                        background:`${col}22`,border:`1px solid ${col}44`,
                         display:"flex",alignItems:"center",justifyContent:"center",
-                        fontSize:12,color:"#000",fontWeight:700,transition:"all 0.2s",
-                      }}>{topic.done?"✓":""}</div>
-                      <span onClick={()=>toggleDone(topic)} style={{
-                        flex:1,fontSize:13,cursor:"pointer",
-                        color:topic.done?C.accentText:C.text,
-                        textDecoration:topic.done?"line-through":"none",
-                        opacity:topic.done?0.8:1,
-                      }}>{topic.topic}</span>
-                      <button onClick={()=>{setEditingId(topic.id);setEditText(topic.topic);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:13,padding:"2px 4px",opacity:0.6}}
-                        onMouseEnter={e=>e.currentTarget.style.opacity="1"}
-                        onMouseLeave={e=>e.currentTarget.style.opacity="0.6"}>✎</button>
-                      <button onClick={()=>deleteTopic(topic)} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16,padding:"2px 4px",opacity:0.6}}
-                        onMouseEnter={e=>{e.currentTarget.style.opacity="1";e.currentTarget.style.color=C.danger;}}
-                        onMouseLeave={e=>{e.currentTarget.style.opacity="0.6";e.currentTarget.style.color=C.muted;}}>×</button>
+                        fontSize:18,fontWeight:700,color:col,flexShrink:0,
+                      }}>
+                        {sub.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>{sub.name}
+                          {sub.code&&<span style={{color:C.muted,fontSize:11,fontFamily:M,marginLeft:8,fontWeight:400}}>{sub.code}</span>}
+                        </div>
+                        <div style={{fontSize:12,color:C.muted}}>
+                          {attended}/{total} classes
+                          {duration!=="overall"&&<span style={{color:col,marginLeft:4}}>({duration})</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontFamily:M,fontSize:22,fontWeight:700,color:statusColor,lineHeight:1}}>{p}%</div>
+                        <div style={{fontSize:10,color:statusColor,marginTop:2,fontWeight:600}}>
+                          {p>=75?"✓ Good":p>=60?"⚠ Low":"✗ Critical"}
+                        </div>
+                      </div>
+                      <button onClick={()=>deleteSubject(sub.id)} style={{
+                        background:"none",border:"none",color:C.muted,cursor:"pointer",
+                        fontSize:18,lineHeight:1,padding:"4px",borderRadius:6,
+                        transition:"color 0.2s",
+                      }}
+                      onMouseEnter={e=>e.currentTarget.style.color=C.danger}
+                      onMouseLeave={e=>e.currentTarget.style.color=C.muted}>×</button>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div style={{marginBottom:14}}>
+                    <div style={{height:6,background:C.border,borderRadius:3,overflow:"hidden",marginBottom:6}}>
+                      <div style={{
+                        height:"100%",
+                        width:`${Math.min(p,100)}%`,
+                        background:`linear-gradient(90deg,${statusColor},${col})`,
+                        borderRadius:3,transition:"width 0.6s ease",
+                      }}/>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.muted}}>
+                      <span>0%</span>
+                      <span style={{color:statusColor,fontWeight:600}}>
+                        {p<75?`Need ${needed} more class${needed!==1?"es":""} for 75%`:`Can miss ${canMiss} more class${canMiss!==1?"es":""}`}
+                      </span>
+                      <span>100%</span>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                    <button onClick={()=>markClass(sub,"present")} style={{
+                      flex:"1 1 80px",padding:"10px 14px",
+                      background:C.accentDim,border:`1px solid ${C.accent}44`,
+                      color:C.accent,borderRadius:12,fontSize:12,fontWeight:700,
+                      cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
+                    }}
+                    onMouseEnter={e=>{e.currentTarget.style.background=C.accent;e.currentTarget.style.color="#000";}}
+                    onMouseLeave={e=>{e.currentTarget.style.background=C.accentDim;e.currentTarget.style.color=C.accent;}}>
+                      ✓ Present
+                    </button>
+                    <button onClick={()=>markClass(sub,"absent")} style={{
+                      flex:"1 1 80px",padding:"10px 14px",
+                      background:C.dangerDim,border:`1px solid ${C.danger}44`,
+                      color:C.danger,borderRadius:12,fontSize:12,fontWeight:700,
+                      cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
+                    }}
+                    onMouseEnter={e=>{e.currentTarget.style.background=C.danger;e.currentTarget.style.color="#000";}}
+                    onMouseLeave={e=>{e.currentTarget.style.background=C.dangerDim;e.currentTarget.style.color=C.danger;}}>
+                      ✗ Absent
+                    </button>
+                    <button onClick={()=>{setEditingSub(editingSub===sub.id?null:sub.id);setEditVals({attended:sub.attended||0,total:sub.total||0});}} style={{
+                      padding:"10px 14px",
+                      background:editingSub===sub.id?C.blueDim:"none",
+                      border:`1px solid ${C.border}`,
+                      color:editingSub===sub.id?C.blue:C.muted,
+                      borderRadius:12,fontSize:12,fontWeight:600,
+                      cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
+                    }}>✎ Edit</button>
+                  </div>
+
+                  {/* Manual edit form */}
+                  {editingSub===sub.id&&(
+                    <div style={{
+                      marginTop:14,padding:16,
+                      background:C.surface,borderRadius:12,
+                      border:`1px solid ${C.blue}33`,
+                      animation:"fadeUp 0.2s ease both",
+                    }}>
+                      <div style={{fontSize:12,color:C.blue,fontWeight:600,marginBottom:12,textTransform:"uppercase",letterSpacing:"0.05em"}}>Manual Edit</div>
+                      <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
+                        <div style={{flex:1,minWidth:80}}>
+                          <div style={{fontSize:11,color:C.muted,marginBottom:6}}>Classes Attended</div>
+                          <input type="number" value={editVals.attended} onChange={e=>setEditVals(p=>({...p,attended:e.target.value}))}
+                            style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:14,fontFamily:M,fontWeight:700,outline:"none",textAlign:"center"}}/>
+                        </div>
+                        <div style={{color:C.muted,fontSize:18,paddingBottom:8}}>/</div>
+                        <div style={{flex:1,minWidth:80}}>
+                          <div style={{fontSize:11,color:C.muted,marginBottom:6}}>Total Classes</div>
+                          <input type="number" value={editVals.total} onChange={e=>setEditVals(p=>({...p,total:e.target.value}))}
+                            style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:14,fontFamily:M,fontWeight:700,outline:"none",textAlign:"center"}}/>
+                        </div>
+                        <button onClick={()=>saveManualEdit(sub)} style={{
+                          padding:"10px 20px",background:C.blue,border:"none",
+                          color:"#000",borderRadius:10,fontSize:13,fontWeight:700,
+                          cursor:"pointer",fontFamily:F,flexShrink:0,
+                        }}>Save</button>
+                        <button onClick={()=>setEditingSub(null)} style={{
+                          padding:"10px 14px",background:"none",border:`1px solid ${C.border}`,
+                          color:C.muted,borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F,
+                        }}>✕</button>
+                      </div>
+                      {editVals.attended&&editVals.total&&(
+                        <div style={{marginTop:10,fontSize:12,color:C.muted}}>
+                          Preview: <span style={{color:att(parseInt(editVals.attended),parseInt(editVals.total))>=75?C.accent:C.danger,fontWeight:700}}>
+                            {att(parseInt(editVals.attended)||0,parseInt(editVals.total)||0)}%
+                          </span>
+                          {att(parseInt(editVals.attended)||0,parseInt(editVals.total)||0)>=75?" ✓ Will be above 75%":" ✗ Still below 75%"}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Chart */}
+                  {showChart&&chartData.length>0&&(
+                    <div style={{marginTop:16,paddingTop:16,borderTop:`1px solid ${C.border}`}}>
+                      <div style={{fontSize:11,color:C.muted,marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600}}>{duration} trend</div>
+                      <BarChart data={chartData} color={col} height={90}/>
                     </div>
                   )}
                 </div>
+              </div>
+            );
+          })}
+        </div>}
+    </div>
+  );
+}
+
+
+// ── Assignments ───────────────────────────────────────────────────────────────
+function Assignments({assignments,setAssignments,userId}) {
+  const [showAdd,setShowAdd]=useState(false);
+  const [filter,setFilter]=useState("all");
+  const [newA,setNewA]=useState({title:"",subject:"",due:"",priority:"medium"});
+  const priCol={high:C.danger,medium:C.warn,low:C.accent};
+  const statCol={pending:[C.warn,C.warnDim],"in-progress":[C.blue,C.blueDim],submitted:[C.accentText,C.accentDim]};
+  const filtered=filter==="all"?assignments:assignments.filter(a=>a.status===filter);
+
+  async function add() {
+    if(!newA.title||!newA.due) return;
+    const {data,error}=await supabase.from("assignments").insert({user_id:userId,...newA,status:"pending"}).select().single();
+    if(!error){setAssignments(prev=>[...prev,data]);setNewA({title:"",subject:"",due:"",priority:"medium"});setShowAdd(false);}
+  }
+  async function updateStatus(id,status) {
+    await supabase.from("assignments").update({status}).eq("id",id);
+    setAssignments(prev=>prev.map(a=>a.id===id?{...a,status}:a));
+  }
+  async function del(id) {
+    await supabase.from("assignments").delete().eq("id",id);
+    setAssignments(prev=>prev.filter(a=>a.id!==id));
+  }
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>Assignments</h2>
+        <Btn onClick={()=>setShowAdd(!showAdd)}>+ Add</Btn>
+      </div>
+      {showAdd&&<Card style={{marginBottom:16,background:C.surface}}>
+        <Input placeholder="Assignment title" value={newA.title} onChange={e=>setNewA(p=>({...p,title:e.target.value}))} style={{width:"100%",marginBottom:10}}/>
+        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+          <Input placeholder="Subject" value={newA.subject} onChange={e=>setNewA(p=>({...p,subject:e.target.value}))} style={{flex:"1 1 120px"}}/>
+          <Input type="date" value={newA.due} onChange={e=>setNewA(p=>({...p,due:e.target.value}))} style={{flex:"1 1 120px"}}/>
+        </div>
+        <Select value={newA.priority} onChange={e=>setNewA(p=>({...p,priority:e.target.value}))} style={{width:"100%",marginBottom:10}}>
+          <option value="high">High Priority</option><option value="medium">Medium Priority</option><option value="low">Low Priority</option>
+        </Select>
+        <div style={{display:"flex",gap:8}}><Btn onClick={add}>Add</Btn><Btn onClick={()=>setShowAdd(false)} variant="ghost">Cancel</Btn></div>
+      </Card>}
+      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        {["all","pending","in-progress","submitted"].map(f=>(
+          <button key={f} onClick={()=>setFilter(f)} style={{background:filter===f?C.accent:C.card,border:`1px solid ${filter===f?C.accent:C.border}`,color:filter===f?"#000":C.muted,fontSize:11,fontWeight:600,padding:"5px 12px",borderRadius:8,cursor:"pointer",fontFamily:F,textTransform:"capitalize"}}>
+            {f==="all"?`All (${assignments.length})`:f}
+          </button>
+        ))}
+      </div>
+      {filtered.length===0?<Card style={{textAlign:"center",padding:48}}><div style={{fontSize:32,marginBottom:12}}>✅</div><div style={{color:C.muted,fontSize:14}}>No assignments here!</div></Card>
+        :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {filtered.map(a=>{
+            const d=daysLeft(a.due),[sc,sb]=statCol[a.status]||statCol.pending;
+            return <Card key={a.id} style={{padding:14,position:"relative"}}>
+              <button onClick={()=>del(a.id)} style={{position:"absolute",top:10,right:10,background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:18}}>×</button>
+              <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+                <div style={{width:3,height:40,borderRadius:2,background:priCol[a.priority]||C.muted,flexShrink:0,marginTop:4}}/>
+                <div style={{flex:1,minWidth:0,paddingRight:20}}>
+                  <div style={{fontSize:14,fontWeight:500,color:a.status==="submitted"?C.muted:C.text,textDecoration:a.status==="submitted"?"line-through":"none",marginBottom:3}}>{a.title}</div>
+                  <div style={{fontSize:11,color:C.muted,marginBottom:8}}>{a.subject} · Due {a.due}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    {a.status!=="submitted"&&<Badge color={d<=2?C.danger:d<=5?C.warn:C.muted} bg={d<=2?C.dangerDim:d<=5?C.warnDim:C.border}>{d<0?"overdue":d===0?"today":`${d}d left`}</Badge>}
+                    <Select value={a.status} onChange={e=>updateStatus(a.id,e.target.value)} style={{background:sb,border:`1px solid ${sc}44`,color:sc,fontSize:11,fontWeight:600,padding:"4px 8px"}}>
+                      <option value="pending">Pending</option><option value="in-progress">In Progress</option><option value="submitted">Submitted</option>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            </Card>;
+          })}
+        </div>}
+    </div>
+  );
+}
+
+// ── Exams ─────────────────────────────────────────────────────────────────────
+function Exams({exams,setExams,userId}) {
+  const [showAdd,setShowAdd]=useState(false);
+  const [newE,setNewE]=useState({subject:"",date:"",time:"",type:"Midterm",hall:""});
+const [customExamTypes,setCustomExamTypes]=useState([]);
+  async function add() {
+    if(!newE.subject||!newE.date) return;
+    const {data,error}=await supabase.from("exams").insert({user_id:userId,...newE}).select().single();
+    if(!error){setExams(prev=>[...prev,data]);setNewE({subject:"",date:"",time:"",type:"Midterm",hall:""});setShowAdd(false);}
+  }
+  async function del(id) {
+    await supabase.from("exams").delete().eq("id",id);
+    setExams(prev=>prev.filter(e=>e.id!==id));
+  }
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>Exam Countdown</h2>
+        <Btn onClick={()=>setShowAdd(!showAdd)}>+ Add Exam</Btn>
+      </div>
+      {showAdd&&<Card style={{marginBottom:16,background:C.surface}}>
+        <Input placeholder="Subject" value={newE.subject} onChange={e=>setNewE(p=>({...p,subject:e.target.value}))} style={{width:"100%",marginBottom:10}}/>
+        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+          <Input type="date" value={newE.date} onChange={e=>setNewE(p=>({...p,date:e.target.value}))} style={{flex:"1 1 120px"}}/>
+          <Input type="time" value={newE.time} onChange={e=>setNewE(p=>({...p,time:e.target.value}))} style={{flex:"1 1 120px"}}/>
+        </div>
+        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+          <div style={{flex:"1 1 120px"}}>
+  <Input placeholder="Exam type" value={newE.type} onChange={e=>setNewE(p=>({...p,type:e.target.value}))} style={{width:"100%"}}/>
+  <div style={{display:"flex",flexWrap:"wrap",gap:4,marginTop:6}}>
+    {["Midterm","Final","Quiz","Practical","Viva","Internal","Theory","Oral",...(customExamTypes||[])].map(t=>(
+      <button key={t} onClick={()=>setNewE(p=>({...p,type:t}))} style={{background:newE.type===t?C.accent:C.surface,border:`1px solid ${newE.type===t?C.accent:C.border}`,color:newE.type===t?"#000":C.muted,fontSize:10,padding:"3px 8px",borderRadius:6,cursor:"pointer",fontFamily:F,display:"flex",alignItems:"center",gap:4}}>
+        {t}{customExamTypes?.includes(t)&&<span onClick={e=>{e.stopPropagation();setCustomExamTypes(prev=>prev.filter(x=>x!==t));}} style={{color:C.danger,fontWeight:700}}>×</span>}
+      </button>
+    ))}
+    {newE.type&&!["Midterm","Final","Quiz","Practical","Viva","Internal","Theory","Oral",...(customExamTypes||[])].includes(newE.type)&&(
+      <button onClick={()=>setCustomExamTypes(prev=>[...(prev||[]),newE.type])} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accentText,fontSize:10,padding:"3px 8px",borderRadius:6,cursor:"pointer",fontFamily:F}}>
+        + Save "{newE.type}"
+      </button>
+    )}
+  </div>
+</div>
+          <Input placeholder="Hall / Room" value={newE.hall} onChange={e=>setNewE(p=>({...p,hall:e.target.value}))} style={{flex:"1 1 120px"}}/>
+        </div>
+        <div style={{display:"flex",gap:8}}><Btn onClick={add}>Add</Btn><Btn onClick={()=>setShowAdd(false)} variant="ghost">Cancel</Btn></div>
+      </Card>}
+      {exams.length===0?<Card style={{textAlign:"center",padding:48}}><div style={{fontSize:32,marginBottom:12}}>📅</div><div style={{color:C.muted,fontSize:14}}>No exams added yet.</div></Card>
+        :<div className="grid-2">
+          {[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date)).map(e=>{
+            const d=daysLeft(e.date),urg=d<=7?C.danger:d<=14?C.warn:C.blue,p=Math.max(0,Math.min(100,100-(d/30)*100));
+            return <Card key={e.id} style={{overflow:"hidden",position:"relative"}} glow={urg}>
+              <button onClick={()=>del(e.id)} style={{position:"absolute",top:12,right:12,background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:18,zIndex:1}}>×</button>
+              <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${urg} ${p}%,${C.border} ${p}%)`}}/>
+              <div style={{marginTop:8}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:12,paddingRight:20}}>
+                  <div><Badge color={urg} bg={`${urg}22`}>{e.type}</Badge><div style={{fontSize:15,fontWeight:700,marginTop:8}}>{e.subject}</div></div>
+                  <div style={{textAlign:"right"}}>
+                    <div style={{fontFamily:M,fontSize:32,fontWeight:700,color:urg,lineHeight:1}}>{d<0?0:d}</div>
+                    <div style={{fontSize:11,color:C.muted}}>days left</div>
+                  </div>
+                </div>
+                <div style={{display:"flex",gap:12,fontSize:11,color:C.muted,flexWrap:"wrap"}}>
+                  <span>📅 {e.date}</span>{e.time&&<span>🕐 {e.time}</span>}{e.hall&&<span>📍 {e.hall}</span>}
+                </div>
+              </div>
+            </Card>;
+          })}
+        </div>}
+    </div>
+  );
+}
+
+// ── Performance Tracker ───────────────────────────────────────────────────────
+function Performance({scores,setScores,userId,profile}) {
+  const [showAdd,setShowAdd]=useState(false);
+  const [tab,setTab]=useState("subjects");
+  const [newS,setNewS]=useState({
+    subject:"",exam_type:"Internal",
+    theory_marks:"",theory_max:150,theory_pass_pct:50,
+    practical_marks:"",practical_max:100,practical_pass_pct:50,
+    internal_marks:"",internal_max:50,internal_pass_pct:50,
+    date:new Date().toISOString().split("T")[0],notes:""
+  });
+
+  const isBHMS=(profile?.program||"").toUpperCase().includes("BHMS");
+
+  function passStatus(s) {
+    const tPct=s.theory_max>0?(s.theory_marks/s.theory_max)*100:null;
+    const pPct=s.practical_max>0?(s.practical_marks/s.practical_max)*100:null;
+    const iPct=s.internal_max>0?(s.internal_marks/s.internal_max)*100:null;
+    const tPass=tPct===null||tPct>=(s.theory_pass_pct||50);
+    const pPass=pPct===null||pPct>=(s.practical_pass_pct||50);
+    const iPass=iPct===null||iPct>=(s.internal_pass_pct||50);
+    return {tPass,pPass,iPass,overall:tPass&&pPass&&iPass,tPct,pPct,iPct};
+  }
+
+  async function add() {
+    if(!newS.subject) return;
+    const payload={
+      user_id:userId,
+      subject:newS.subject,
+      exam_type:newS.exam_type,
+      theory_marks:parseFloat(newS.theory_marks)||0,
+      theory_max:parseFloat(newS.theory_max)||0,
+      theory_pass_pct:parseFloat(newS.theory_pass_pct)||50,
+      practical_marks:parseFloat(newS.practical_marks)||0,
+      practical_max:parseFloat(newS.practical_max)||0,
+      practical_pass_pct:parseFloat(newS.practical_pass_pct)||50,
+      internal_marks:parseFloat(newS.internal_marks)||0,
+      internal_max:parseFloat(newS.internal_max)||0,
+      internal_pass_pct:parseFloat(newS.internal_pass_pct)||50,
+      date:newS.date,
+      notes:newS.notes,
+    };
+    const {data,error}=await supabase.from("scores").insert(payload).select().single();
+    if(!error){
+      setScores(prev=>[...prev,data]);
+      setNewS({subject:"",exam_type:"Internal",theory_marks:"",theory_max:150,theory_pass_pct:50,practical_marks:"",practical_max:100,practical_pass_pct:50,internal_marks:"",internal_max:50,internal_pass_pct:50,date:new Date().toISOString().split("T")[0],notes:""});
+      setShowAdd(false);
+    }
+  }
+  async function del(id) {
+    await supabase.from("scores").delete().eq("id",id);
+    setScores(prev=>prev.filter(s=>s.id!==id));
+  }
+
+  const passed=scores.filter(s=>passStatus(s).overall).length;
+  const failed=scores.filter(s=>!passStatus(s).overall).length;
+  const avgTheory=scores.length?Math.round(scores.reduce((a,s)=>a+(s.theory_max>0?(s.theory_marks/s.theory_max)*100:0),0)/scores.length):0;
+  const avgPractical=scores.filter(s=>s.practical_max>0).length?Math.round(scores.filter(s=>s.practical_max>0).reduce((a,s)=>a+(s.practical_marks/s.practical_max)*100,0)/scores.filter(s=>s.practical_max>0).length):0;
+
+  const chartData=scores.map(s=>{
+    const tPct=s.theory_max>0?Math.round((s.theory_marks/s.theory_max)*100):0;
+    return {label:s.subject.slice(0,6),value:tPct};
+  });
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>Performance</h2>
+        <Btn onClick={()=>setShowAdd(!showAdd)}>+ Add Scores</Btn>
+      </div>
+
+      {/* Summary cards */}
+      <div className="grid-4" style={{marginBottom:20}}>
+        {[
+          {label:"Passed",value:passed,color:C.accent,bg:C.accentDim},
+          {label:"Failed",value:failed,color:C.danger,bg:C.dangerDim},
+          {label:"Avg Theory",value:`${avgTheory}%`,color:C.blue,bg:C.blueDim},
+          {label:"Avg Practical",value:`${avgPractical}%`,color:C.purple,bg:C.purpleDim},
+        ].map(s=>(
+          <Card key={s.label} style={{background:s.bg,border:`1px solid ${s.color}22`,padding:14}}>
+            <div style={{fontSize:10,color:s.color,fontWeight:600,letterSpacing:"0.05em",textTransform:"uppercase",marginBottom:6}}>{s.label}</div>
+            <div style={{fontSize:24,fontWeight:700,fontFamily:M,color:s.color}}>{s.value}</div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Chart */}
+      {scores.length>0&&(
+        <Card style={{marginBottom:20}}>
+          <div style={{fontSize:13,fontWeight:600,marginBottom:12}}>Theory % by Subject</div>
+          <BarChart data={chartData} color={C.blue} height={130}/>
+        </Card>
+      )}
+
+      {/* Tabs */}
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        {["subjects","all"].map(t=>(
+          <button key={t} onClick={()=>setTab(t)} style={{background:tab===t?C.accent:C.card,border:`1px solid ${tab===t?C.accent:C.border}`,color:tab===t?"#000":C.muted,fontSize:11,fontWeight:600,padding:"5px 14px",borderRadius:8,cursor:"pointer",fontFamily:F,textTransform:"capitalize"}}>
+            {t==="subjects"?"By Subject":"All Records"}
+          </button>
+        ))}
+      </div>
+
+      {/* Add form */}
+      {showAdd&&<Card style={{marginBottom:16,background:C.surface}}>
+        <div style={{fontSize:13,fontWeight:600,marginBottom:12}}>Add Score Record</div>
+        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+          <Input placeholder="Subject" value={newS.subject} onChange={e=>setNewS(p=>({...p,subject:e.target.value}))} style={{flex:"2 1 140px"}}/>
+          <Select value={["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)?newS.exam_type:"Custom"} onChange={e=>{if(e.target.value==="Custom"){setNewS(p=>({...p,exam_type:""}))}else{setNewS(p=>({...p,exam_type:e.target.value}));}}} style={{flex:"1 1 100px"}}>
+            <option>Internal</option><option>Midterm</option><option>Final</option><option>Practical</option><option>Viva</option><option value="Custom">Custom</option>
+          </Select>
+          {!["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)&&(
+            <Input placeholder="Exam name (e.g. Sessional 1)" value={newS.exam_type} onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))} style={{flex:"2 1 140px"}}/>
+          )}
+          <Input type="date" value={newS.date} onChange={e=>setNewS(p=>({...p,date:e.target.value}))} style={{flex:"1 1 120px"}}/>
+        </div>
+        {/* Theory */}
+        <div style={{background:C.bg,borderRadius:10,padding:12,marginBottom:10}}>
+          <div style={{fontSize:11,color:C.blue,fontWeight:600,marginBottom:8,textTransform:"uppercase"}}>Theory</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:70}}>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Marks</div>
+              <Input type="number" placeholder="0" value={newS.theory_marks} onChange={e=>setNewS(p=>({...p,theory_marks:e.target.value}))} style={{width:"100%"}}/>
+            </div>
+            <div style={{flex:1,minWidth:70}}>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Max {isBHMS&&<span style={{color:C.accent}}>(BHMS:150)</span>}</div>
+              <Input type="number" placeholder="150" value={newS.theory_max} onChange={e=>setNewS(p=>({...p,theory_max:e.target.value}))} style={{width:"100%"}}/>
+            </div>
+            <div style={{flex:1,minWidth:70}}>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Pass%</div>
+              <Input type="number" placeholder="50" value={newS.theory_pass_pct} onChange={e=>setNewS(p=>({...p,theory_pass_pct:e.target.value}))} style={{width:"100%"}}/>
+            </div>
+          </div>
+        </div>
+        {/* Practical */}
+        <div style={{background:C.bg,borderRadius:10,padding:12,marginBottom:10}}>
+          <div style={{fontSize:11,color:C.purple,fontWeight:600,marginBottom:8,textTransform:"uppercase"}}>Practical / Oral</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:70}}>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Marks</div>
+              <Input type="number" placeholder="0" value={newS.practical_marks} onChange={e=>setNewS(p=>({...p,practical_marks:e.target.value}))} style={{width:"100%"}}/>
+            </div>
+            <div style={{flex:1,minWidth:70}}>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Max {isBHMS&&<span style={{color:C.accent}}>(BHMS:100)</span>}</div>
+              <Input type="number" placeholder="100" value={newS.practical_max} onChange={e=>setNewS(p=>({...p,practical_max:e.target.value}))} style={{width:"100%"}}/>
+            </div>
+            <div style={{flex:1,minWidth:70}}>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Pass%</div>
+              <Input type="number" placeholder="50" value={newS.practical_pass_pct} onChange={e=>setNewS(p=>({...p,practical_pass_pct:e.target.value}))} style={{width:"100%"}}/>
+            </div>
+          </div>
+        </div>
+        {/* Internal */}
+        <div style={{background:C.bg,borderRadius:10,padding:12,marginBottom:10}}>
+          <div style={{fontSize:11,color:C.warn,fontWeight:600,marginBottom:8,textTransform:"uppercase"}}>Internal Assessment</div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <div style={{flex:1,minWidth:70}}>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Marks</div>
+              <Input type="number" placeholder="0" value={newS.internal_marks} onChange={e=>setNewS(p=>({...p,internal_marks:e.target.value}))} style={{width:"100%"}}/>
+            </div>
+            <div style={{flex:1,minWidth:70}}>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Max {isBHMS&&<span style={{color:C.accent}}>(BHMS:50)</span>}</div>
+              <Input type="number" placeholder="50" value={newS.internal_max} onChange={e=>setNewS(p=>({...p,internal_max:e.target.value}))} style={{width:"100%"}}/>
+            </div>
+            <div style={{flex:1,minWidth:70}}>
+              <div style={{fontSize:10,color:C.muted,marginBottom:4}}>Pass%</div>
+              <Input type="number" placeholder="50" value={newS.internal_pass_pct} onChange={e=>setNewS(p=>({...p,internal_pass_pct:e.target.value}))} style={{width:"100%"}}/>
+            </div>
+          </div>
+        </div>
+        <Input placeholder="Notes (optional)" value={newS.notes} onChange={e=>setNewS(p=>({...p,notes:e.target.value}))} style={{width:"100%",marginBottom:10}}/>
+        <div style={{display:"flex",gap:8}}><Btn onClick={add}>Save</Btn><Btn onClick={()=>setShowAdd(false)} variant="ghost">Cancel</Btn></div>
+      </Card>}
+
+      {/* Records */}
+      {scores.length===0?<Card style={{textAlign:"center",padding:48}}><div style={{fontSize:32,marginBottom:12}}>📊</div><div style={{color:C.muted,fontSize:14}}>No scores recorded yet.</div></Card>
+        :<div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {scores.map(s=>{
+            const {tPass,pPass,iPass,overall,tPct,pPct,iPct}=passStatus(s);
+            return <Card key={s.id} style={{padding:14,position:"relative"}} glow={overall?C.accentDim:C.dangerDim}>
+              <button onClick={()=>del(s.id)} style={{position:"absolute",top:10,right:10,background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:18}}>×</button>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10,paddingRight:20}}>
+                <div>
+                  <div style={{fontSize:14,fontWeight:600,marginBottom:4}}>{s.subject}</div>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    <Badge color={C.blue} bg={C.blueDim}>{s.exam_type}</Badge>
+                    <Badge color={overall?C.accent:C.danger} bg={overall?C.accentDim:C.dangerDim}>{overall?"PASS":"FAIL"}</Badge>
+                    {s.date&&<Badge>{s.date}</Badge>}
+                  </div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {s.theory_max>0&&(
+                  <div style={{flex:1,minWidth:80,background:C.bg,borderRadius:8,padding:"8px 10px",border:`1px solid ${tPass?C.accent+"33":C.danger+"33"}`}}>
+                    <div style={{fontSize:10,color:C.blue,marginBottom:2,fontWeight:600}}>THEORY</div>
+                    <div style={{fontFamily:M,fontSize:16,fontWeight:700,color:tPass?C.accent:C.danger}}>{s.theory_marks}/{s.theory_max}</div>
+                    <div style={{fontSize:10,color:C.muted}}>{Math.round(tPct)}% · pass {s.theory_pass_pct}%</div>
+                  </div>
+                )}
+                {s.practical_max>0&&(
+                  <div style={{flex:1,minWidth:80,background:C.bg,borderRadius:8,padding:"8px 10px",border:`1px solid ${pPass?C.accent+"33":C.danger+"33"}`}}>
+                    <div style={{fontSize:10,color:C.purple,marginBottom:2,fontWeight:600}}>PRACTICAL</div>
+                    <div style={{fontFamily:M,fontSize:16,fontWeight:700,color:pPass?C.accent:C.danger}}>{s.practical_marks}/{s.practical_max}</div>
+                    <div style={{fontSize:10,color:C.muted}}>{Math.round(pPct)}% · pass {s.practical_pass_pct}%</div>
+                  </div>
+                )}
+                {s.internal_max>0&&(
+                  <div style={{flex:1,minWidth:80,background:C.bg,borderRadius:8,padding:"8px 10px",border:`1px solid ${iPass?C.accent+"33":C.danger+"33"}`}}>
+                    <div style={{fontSize:10,color:C.warn,marginBottom:2,fontWeight:600}}>INTERNAL</div>
+                    <div style={{fontFamily:M,fontSize:16,fontWeight:700,color:iPass?C.accent:C.danger}}>{s.internal_marks}/{s.internal_max}</div>
+                    <div style={{fontSize:10,color:C.muted}}>{Math.round(iPct)}% · pass {s.internal_pass_pct}%</div>
+                  </div>
+                )}
+              </div>
+              {s.notes&&<div style={{marginTop:8,fontSize:12,color:C.muted,fontStyle:"italic"}}>"{s.notes}"</div>}
+            </Card>;
+          })}
+        </div>}
+    </div>
+  );
+}
+
+function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
+  const [conversations,setConversations]=useState([]);
+  const [activeConv,setActiveConv]=useState(null);
+  const [messages,setMessages]=useState([]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [showSidebar,setShowSidebar]=useState(true);
+  const [editingTitle,setEditingTitle]=useState(null);
+  const [newTitle,setNewTitle]=useState("");
+  const [showArchived,setShowArchived]=useState(false);
+  const bottomRef=useRef(null);
+
+  useEffect(()=>{loadConversations();},[]);
+  useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
+
+  async function loadConversations() {
+    const {data}=await supabase.from("ai_conversations").select("*").eq("user_id",userId).order("updated_at",{ascending:false});
+    setConversations(data||[]);
+  }
+
+  async function loadMessages(convId) {
+    const {data}=await supabase.from("ai_messages").select("*").eq("conversation_id",convId).order("created_at",{ascending:true});
+    setMessages(data||[]);
+  }
+
+  async function newChat() {
+    const {data,error}=await supabase.from("ai_conversations").insert({user_id:userId,title:"New Chat"}).select().single();
+    if(!error){
+      setConversations(prev=>[data,...prev]);
+      setActiveConv(data);
+      setMessages([]);
+    }
+  }
+
+  async function selectConv(conv) {
+    setActiveConv(conv);
+    await loadMessages(conv.id);
+  }
+
+  async function deleteConv(id) {
+    await supabase.from("ai_conversations").delete().eq("id",id);
+    setConversations(prev=>prev.filter(c=>c.id!==id));
+    if(activeConv?.id===id){setActiveConv(null);setMessages([]);}
+  }
+
+  async function archiveConv(id) {
+    const conv=conversations.find(c=>c.id===id);
+    await supabase.from("ai_conversations").update({archived:!conv.archived}).eq("id",id);
+    setConversations(prev=>prev.map(c=>c.id===id?{...c,archived:!c.archived}:c));
+  }
+
+  async function renameConv(id,title) {
+    await supabase.from("ai_conversations").update({title}).eq("id",id);
+    setConversations(prev=>prev.map(c=>c.id===id?{...c,title}:c));
+    setEditingTitle(null);
+  }
+
+  async function autoName(convId,firstMessage) {
+    const title=firstMessage.slice(0,40)+(firstMessage.length>40?"...":"");
+    await renameConv(convId,title);
+  }
+
+  function buildContext() {
+    const avgAtt=subjects.length?Math.round(subjects.reduce((s,sub)=>s+att(sub.attended||0,sub.total||0),0)/subjects.length):0;
+    const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75).map(s=>s.name);
+    const pending=assignments.filter(a=>a.status!=="submitted").length;
+    const upcoming=exams.filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,3);
+    const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
+    return `You are an academic AI assistant built into StudentOS — a web app for BHMS students at Monark Homoeopathic Medical College, Vahelal, Ahmedabad (Monark University).
+
+ABOUT StudentOS:
+StudentOS is a free academic management platform for BHMS students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
+
+STUDENT PROFILE:
+Name: ${profile?.name||"Student"}
+Program: ${profile?.program||"BHMS"} | Semester: ${profile?.semester||"2nd BHMS"} | College: ${profile?.college||"Monark Homoeopathic Medical College"}
+
+CURRENT ATTENDANCE:
+Average: ${avgAtt}% ${avgAtt<75?"⚠️ BELOW 75% - CRITICAL":"✓ Good"}
+${subjectDetails}
+Low attendance subjects: ${lowAtt.join(", ")||"None"}
+
+ASSIGNMENTS: ${pending} pending tasks
+UPCOMING EXAMS: ${upcoming.map(e=>`${e.subject} in ${daysLeft(e.date)} days`).join(", ")||"None"}
+
+BHMS 2nd YEAR SUBJECTS:
+- Organon of Medicine & Homoeopathic Philosophy (Theory + Practical)
+- Materia Medica / HMM (Homoeopathic Materia Medica)
+- Pathology & Microbiology (Theory + Practical)  
+- Forensic Medicine & Toxicology / FMT (Theory + Practical)
+- Surgery including ENT, Eye, Dental (Theory + Practical)
+- Gynaecology & Obstetrics (Theory + Practical)
+- Practice of Medicine / POM (Theory)
+- Repertory (Theory)
+- Yoga & Naturopathy / PT
+
+NCH RULES: Minimum 75% attendance required. With medical certificate, 65% may be condoned by Principal.
+
+BHMS MARKING SCHEME: Theory max 150, Practical/Oral max 100, Internal Assessment max 50. Passing: 50% in each.
+
+Be helpful, concise, and personalized. You know the student's data. Answer academic questions, help with study plans, explain Homoeopathic concepts, and give attendance/exam advice.`;
+  }
+
+  async function send() {
+    if(!input.trim()||loading) return;
+    if(!activeConv){await newChat();return;}
+    
+    const userText=input.trim();
+    setInput("");
+    
+    const userMsg={role:"user",content:userText,conversation_id:activeConv.id,user_id:userId};
+    const {data:savedUser}=await supabase.from("ai_messages").insert(userMsg).select().single();
+    setMessages(prev=>[...prev,savedUser]);
+
+    // Auto-name if first message
+    if(messages.length===0&&activeConv.title==="New Chat"){
+      autoName(activeConv.id,userText);
+    }
+
+    setLoading(true);
+
+    // Build history for context
+    const history=messages.map(m=>({
+      role:m.role==="user"?"user":"assistant",
+      content:m.content
+    }));
+    history.push({role:"user",content:userText});
+
+    try {
+      const res=await fetch(`https://mwzpfrroagrhuenpdclt.supabase.co/functions/v1/ai-chat`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13enBmcnJvYWdyaHVlbnBkY2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NzU5NDgsImV4cCI6MjA5NTU1MTk0OH0.1XaAfisI75Iafk_tvGRoQNXDXYTzR7Zqsowl2Fb_dM4`},
+        body:JSON.stringify({message:userText,context:buildContext(),history}),
+      });
+      const data=await res.json();
+      if(data.reply){
+        const aiMsg={role:"ai",content:data.reply,conversation_id:activeConv.id,user_id:userId};
+        const {data:savedAi}=await supabase.from("ai_messages").insert(aiMsg).select().single();
+        setMessages(prev=>[...prev,savedAi]);
+        await supabase.from("ai_conversations").update({updated_at:new Date().toISOString()}).eq("id",activeConv.id);
+        setConversations(prev=>prev.map(c=>c.id===activeConv.id?{...c,updated_at:new Date().toISOString()}:c));
+      }
+    } catch(e){
+      setMessages(prev=>[...prev,{role:"ai",content:"Connection error.",id:"err"}]);
+    }
+    setLoading(false);
+  }
+
+  const activeConvs=conversations.filter(c=>!c.archived);
+  const archivedConvs=conversations.filter(c=>c.archived);
+  const quickPrompts=["Analyze my attendance","What should I study next?","Explain Organon basics","Create a study plan"];
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease",display:"flex",gap:12,height:"calc(100vh - 120px)"}}>
+      {/* Sidebar */}
+      {showSidebar&&(
+        <div style={{width:220,flexShrink:0,display:"flex",flexDirection:"column",gap:8,overflowY:"auto"}}>
+          <Btn onClick={newChat} style={{width:"100%",padding:"9px 0",fontSize:12}}>+ New Chat</Btn>
+          <div style={{flex:1,overflowY:"auto"}}>
+            {activeConvs.length===0&&<div style={{color:C.muted,fontSize:12,textAlign:"center",padding:16}}>No conversations yet</div>}
+            {activeConvs.map(conv=>(
+              <div key={conv.id} onClick={()=>selectConv(conv)} style={{padding:"8px 10px",borderRadius:8,background:activeConv?.id===conv.id?C.accentDim:C.card,border:`1px solid ${activeConv?.id===conv.id?C.accent:C.border}`,marginBottom:4,cursor:"pointer",position:"relative",group:true}}>
+                {editingTitle===conv.id?(
+                  <input value={newTitle} onChange={e=>setNewTitle(e.target.value)}
+                    onKeyDown={e=>{if(e.key==="Enter")renameConv(conv.id,newTitle);if(e.key==="Escape")setEditingTitle(null);}}
+                    autoFocus onClick={e=>e.stopPropagation()}
+                    style={{width:"100%",background:"transparent",border:"none",color:C.text,fontSize:12,fontFamily:F,outline:"none"}}/>
+                ):(
+                  <div style={{fontSize:12,fontWeight:activeConv?.id===conv.id?600:400,color:activeConv?.id===conv.id?C.accent:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginBottom:4}}>{conv.title}</div>
+                )}
+                <div style={{display:"flex",gap:4,marginTop:4}}>
+                  <button onClick={e=>{e.stopPropagation();setEditingTitle(conv.id);setNewTitle(conv.title);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,padding:"1px 4px",fontFamily:F}}>✏️</button>
+                  <button onClick={e=>{e.stopPropagation();archiveConv(conv.id);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,padding:"1px 4px",fontFamily:F}}>📦</button>
+                  <button onClick={e=>{e.stopPropagation();if(confirm("Delete this conversation?"))deleteConv(conv.id);}} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:10,padding:"1px 4px",fontFamily:F}}>🗑️</button>
+                </div>
+              </div>
+            ))}
+            {archivedConvs.length>0&&(
+              <div>
+                <button onClick={()=>setShowArchived(!showArchived)} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:F,padding:"8px 0",width:"100%",textAlign:"left"}}>
+                  {showArchived?"▼":"►"} Archived ({archivedConvs.length})
+                </button>
+                {showArchived&&archivedConvs.map(conv=>(
+                  <div key={conv.id} onClick={()=>selectConv(conv)} style={{padding:"8px 10px",borderRadius:8,background:C.surface,border:`1px solid ${C.border}`,marginBottom:4,cursor:"pointer",opacity:0.6}}>
+                    <div style={{fontSize:11,color:C.muted,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{conv.title}</div>
+                    <div style={{display:"flex",gap:4,marginTop:4}}>
+                      <button onClick={e=>{e.stopPropagation();archiveConv(conv.id);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,fontFamily:F}}>↩️ Unarchive</button>
+                      <button onClick={e=>{e.stopPropagation();if(confirm("Delete?"))deleteConv(conv.id);}} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:10,fontFamily:F}}>🗑️</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Chat area */}
+      <div style={{flex:1,display:"flex",flexDirection:"column",minWidth:0}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={()=>setShowSidebar(!showSidebar)} style={{background:C.card,border:`1px solid ${C.border}`,color:C.muted,borderRadius:8,padding:"4px 8px",cursor:"pointer",fontSize:14}}>☰</button>
+            <h2 style={{fontSize:15,fontWeight:700}}>{activeConv?.title||"AI Assistant ✦"}</h2>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{width:7,height:7,borderRadius:"50%",background:C.accent,animation:"pulse 2s infinite"}}/>
+            <span style={{fontSize:11,color:C.accentText}}>Groq AI</span>
+          </div>
+        </div>
+
+        {!activeConv?(
+          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+            <div style={{fontSize:32}}>✦</div>
+            <div style={{fontSize:15,fontWeight:600}}>Start a conversation</div>
+            <div style={{fontSize:13,color:C.muted}}>Click "New Chat" or pick a quick prompt</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center",maxWidth:400}}>
+              {quickPrompts.map(q=>(
+                <button key={q} onClick={async()=>{await newChat();setInput(q);}} style={{padding:"8px 14px",background:C.card,border:`1px solid ${C.border}`,color:C.muted,fontSize:12,borderRadius:20,cursor:"pointer",fontFamily:F}}>
+                  {q}
+                </button>
               ))}
             </div>
           </div>
-        </>
-      )}
-
-      {tab==="planner"&&(
-        <>
-          {upcomingExams.length===0
-            ?<div style={{textAlign:"center",padding:"60px 20px",background:C.card,border:`1px solid ${C.border}`,borderRadius:20}}>
-              <div style={{fontSize:48,marginBottom:16}}>📅</div>
-              <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>No upcoming exams</div>
-              <div style={{fontSize:13,color:C.muted}}>Add exams to get a personalized study plan</div>
-            </div>
-            :<div style={{display:"flex",flexDirection:"column",gap:14}}>
-              {upcomingExams.slice(0,5).map((e,idx)=>{
-                const d=daysLeft(e.date);
-                const subKey=Object.keys(BHMS_TOPICS).find(k=>e.subject.toLowerCase().includes(k.toLowerCase()))||null;
-                const subTopics=subKey?(topics[subKey]||[]):[];
-                const pending=subTopics.filter(t=>!t.done);
-                const hoursPerDay=pending.length>0&&d>0?Math.ceil((pending.length*0.5)/d):0;
-                const urgency=d<=7?C.danger:d<=14?C.warn:C.blue;
-                const urgBg=d<=7?C.dangerDim:d<=14?C.warnDim:C.blueDim;
-                return(
-                  <div key={e.id} style={{background:C.card,border:`1px solid ${urgency}33`,borderRadius:20,padding:20,animation:`fadeUp 0.3s ease ${idx*0.05}s both`}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
-                      <div>
-                        <div style={{fontSize:16,fontWeight:700,marginBottom:6}}>{e.subject}</div>
-                        <span style={{background:urgBg,border:`1px solid ${urgency}44`,color:urgency,fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6}}>{e.type} · {e.date}</span>
-                      </div>
-                      <div style={{textAlign:"center"}}>
-                        <div style={{fontFamily:M,fontSize:28,fontWeight:800,color:urgency,lineHeight:1}}>{d}</div>
-                        <div style={{fontSize:10,color:C.muted}}>days left</div>
-                      </div>
-                    </div>
-                    {subKey?(
-                      <>
-                        <div style={{display:"flex",justifyContent:"space-between",fontSize:12,color:C.muted,marginBottom:8}}>
-                          <span>{pending.length} topics pending</span>
-                          <span style={{color:urgency,fontWeight:600}}>~{hoursPerDay}h/day recommended</span>
-                        </div>
-                        <div style={{height:4,background:C.border,borderRadius:2,marginBottom:10,overflow:"hidden"}}>
-                          <div style={{height:"100%",width:`${subTopics.length?Math.round(((subTopics.length-pending.length)/subTopics.length)*100):0}%`,background:urgency,borderRadius:2}}/>
-                        </div>
-                        {pending.length>0&&(
-                          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                            {pending.slice(0,4).map(t=>(
-                              <span key={t.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 10px",fontSize:11,color:C.muted}}>{t.topic}</span>
-                            ))}
-                            {pending.length>4&&<span style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"4px 10px",fontSize:11,color:C.muted}}>+{pending.length-4} more</span>}
-                          </div>
-                        )}
-                      </>
-                    ):(
-                      <div style={{fontSize:12,color:C.muted,fontStyle:"italic"}}>No topic data available for this subject</div>
-                    )}
+        ):(
+          <>
+            <div className="chat-messages" style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:12,paddingBottom:16}}>
+              {messages.length===0&&<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:32}}>Send a message to start</div>}
+              {messages.map((m,i)=>(
+                <div key={m.id||i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
+                  {m.role==="ai"&&<div style={{width:28,height:28,borderRadius:8,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,marginRight:8,flexShrink:0,alignSelf:"flex-end"}}>✦</div>}
+                  <div style={{maxWidth:"80%",padding:"10px 14px",borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",background:m.role==="user"?C.accent:C.card,color:m.role==="user"?"#000":C.text,fontSize:13,lineHeight:1.6,border:m.role==="ai"?`1px solid ${C.border}`:"none",whiteSpace:"pre-wrap"}}>
+                    {m.content}
                   </div>
-                );
-              })}
-            </div>}
-        </>
-      )}
+                </div>
+              ))}
+              {loading&&(
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <div style={{width:28,height:28,borderRadius:8,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>✦</div>
+                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"16px 16px 16px 4px",padding:"10px 14px"}}>
+                    <div style={{display:"flex",gap:4}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:C.accent,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div>
+                  </div>
+                </div>
+              )}
+              <div ref={bottomRef}/>
+            </div>
+            <div className="chat-input-row" style={{flexShrink:0,paddingTop:8}}>
+              <Input placeholder="Ask anything..." value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} style={{flex:1}}/>
+              <Btn onClick={send} disabled={loading||!input.trim()} style={{padding:"9px 16px",flexShrink:0}}>{loading?"...":"Send"}</Btn>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Timetable ─────────────────────────────────────────────────────────────────
+function Timetable({timetable,setTimetable,userId,subjects}) {
+  const days=["Mon","Tue","Wed","Thu","Fri","Sat"];
+  const todayKey=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][new Date().getDay()];
+  const [activeDay,setActiveDay]=useState(days.includes(todayKey)?todayKey:"Mon");
+  const [showAdd,setShowAdd]=useState(false);
+  const [newC,setNewC]=useState({subject:"",room:"",time:"",duration:1});
+  const subCol=Object.fromEntries(subjects.map(s=>[s.name,s.color]));
+
+  async function add() {
+    if(!newC.subject||!newC.time) return;
+    const {data,error}=await supabase.from("timetable").insert({user_id:userId,...newC,day:activeDay}).select().single();
+    if(!error){setTimetable(prev=>({...prev,[activeDay]:[...(prev[activeDay]||[]),data]}));setNewC({subject:"",room:"",time:"",duration:1});setShowAdd(false);}
+  }
+  async function del(id) {
+    await supabase.from("timetable").delete().eq("id",id);
+    setTimetable(prev=>{const u={...prev};u[activeDay]=(u[activeDay]||[]).filter(c=>c.id!==id);return u;});
+  }
+
+  return (
+    <div style={{animation:"fadeUp 0.3s ease"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>Timetable</h2>
+        <Btn onClick={()=>setShowAdd(!showAdd)}>+ Add Class</Btn>
+      </div>
+      <div style={{display:"flex",gap:6,marginBottom:20,overflowX:"auto"}}>
+        {days.map(d=>(
+          <button key={d} onClick={()=>setActiveDay(d)} style={{flex:"1 0 auto",minWidth:48,padding:"10px 0",background:activeDay===d?C.accent:C.card,border:`1px solid ${activeDay===d?C.accent:C.border}`,color:activeDay===d?"#000":d===todayKey?C.accent:C.muted,fontSize:12,fontWeight:600,borderRadius:10,cursor:"pointer",fontFamily:F}}>
+            {d}{d===todayKey&&<span style={{display:"block",fontSize:9,marginTop:2,opacity:0.7}}>today</span>}
+          </button>
+        ))}
+      </div>
+      {showAdd&&<Card style={{marginBottom:16,background:C.surface}}>
+        <Input placeholder="Subject name" value={newC.subject} onChange={e=>setNewC(p=>({...p,subject:e.target.value}))} style={{width:"100%",marginBottom:10}}/>
+        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
+          <Input type="time" value={newC.time} onChange={e=>setNewC(p=>({...p,time:e.target.value}))} style={{flex:"1 1 100px"}}/>
+          <Input placeholder="Room" value={newC.room} onChange={e=>setNewC(p=>({...p,room:e.target.value}))} style={{flex:"1 1 100px"}}/>
+        </div>
+        <Select value={newC.duration} onChange={e=>setNewC(p=>({...p,duration:Number(e.target.value)}))} style={{width:"100%",marginBottom:10}}>
+          {[1,2,3].map(d=><option key={d} value={d}>{d} hour{d>1?"s":""}</option>)}
+        </Select>
+        <div style={{display:"flex",gap:8}}><Btn onClick={add}>Add</Btn><Btn onClick={()=>setShowAdd(false)} variant="ghost">Cancel</Btn></div>
+      </Card>}
+      <div style={{position:"relative",paddingLeft:60}}>
+        <div style={{position:"absolute",left:24,top:0,bottom:0,width:1,background:C.border}}/>
+        {(timetable[activeDay]||[]).sort((a,b)=>a.time.localeCompare(b.time)).map((cls,i)=>(
+          <div key={cls.id||i} style={{position:"relative",marginBottom:14}}>
+            <div style={{position:"absolute",left:-46,top:4,fontSize:11,color:C.muted,fontFamily:M,width:40,textAlign:"right"}}>{cls.time}</div>
+            <div style={{position:"absolute",left:-29,top:6,width:8,height:8,borderRadius:"50%",background:subCol[cls.subject]||C.accent,border:`2px solid ${C.bg}`}}/>
+            <Card style={{padding:12,borderLeft:`3px solid ${subCol[cls.subject]||C.accent}`,position:"relative"}}>
+              <button onClick={()=>del(cls.id)} style={{position:"absolute",top:8,right:8,background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:16}}>×</button>
+              <div style={{fontSize:13,fontWeight:600,marginBottom:4,paddingRight:20}}>{cls.subject}</div>
+              <div style={{display:"flex",gap:12,fontSize:11,color:C.muted}}>
+                {cls.room&&<span>📍 {cls.room}</span>}<span>⏱ {cls.duration}h</span>
+              </div>
+            </Card>
+          </div>
+        ))}
+        {(!timetable[activeDay]||timetable[activeDay].length===0)&&<div style={{color:C.muted,fontSize:14,padding:"40px 0",textAlign:"center"}}>No classes for {activeDay}</div>}
+      </div>
     </div>
   );
 }
@@ -1648,104 +1808,50 @@ function Profile({profile,setProfile,userId,onLogout}) {
     setProfile(prev=>({...prev,...form}));setEditing(false);setLoading(false);
   }
 
-  const initials=profile?.name?profile.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase():"?";
-
   return (
-    <div style={{animation:"fadeUp 0.3s ease",maxWidth:600}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
-        <h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em"}}>My Profile</h2>
-        {!editing&&(
-          <button onClick={()=>setEditing(true)} style={{
-            background:C.surface,border:`1px solid ${C.border}`,color:C.text,
-            padding:"9px 18px",borderRadius:12,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:F,
-          }}>Edit Profile</button>
-        )}
+    <div style={{animation:"fadeUp 0.3s ease"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+        <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>My Profile</h2>
+        {!editing&&<Btn onClick={()=>setEditing(true)}>Edit Profile</Btn>}
       </div>
-
-      {/* Profile hero */}
-      <div style={{
-        background:`linear-gradient(135deg,${C.accentDim} 0%,${C.card} 100%)`,
-        border:`1px solid ${C.accent}33`,borderRadius:20,padding:24,marginBottom:16,
-        display:"flex",alignItems:"center",gap:20,
-      }}>
-        <div style={{
-          width:72,height:72,borderRadius:20,
-          background:C.accent,display:"flex",alignItems:"center",justifyContent:"center",
-          fontSize:26,fontWeight:800,color:"#000",flexShrink:0,
-          boxShadow:`0 4px 20px ${C.accent}44`,
-        }}>{initials}</div>
-        <div>
-          <div style={{fontSize:20,fontWeight:800,marginBottom:4}}>{profile?.name||"Student"}</div>
-          <div style={{fontSize:13,color:C.accentText,fontWeight:500}}>{profile?.program||"—"}</div>
-          {profile?.college&&<div style={{fontSize:12,color:C.muted,marginTop:2}}>{profile.college}</div>}
+      <Card style={{maxWidth:500}}>
+        <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:24,paddingBottom:24,borderBottom:`1px solid ${C.border}`}}>
+          <div style={{width:64,height:64,borderRadius:16,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,fontWeight:700,color:C.accent,flexShrink:0}}>
+            {profile?.name?profile.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase():"?"}
+          </div>
+          <div>
+            <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>{profile?.name||"Student"}</div>
+            <div style={{fontSize:13,color:C.muted}}>{profile?.program||"—"}</div>
+          </div>
         </div>
-      </div>
-
-      {/* Info card */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:24,marginBottom:16}}>
         {editing?(
           <div>
-            <div style={{fontSize:13,fontWeight:700,color:C.accentText,marginBottom:16}}>Edit Profile</div>
-            {[
-              {key:"name",label:"Full Name",placeholder:"Your full name"},
-              {key:"college",label:"College / University",placeholder:"Your college name"},
-              {key:"program",label:"Program",placeholder:"e.g. BHMS, MBBS"},
-              {key:"semester",label:"Current Semester",placeholder:"e.g. 4th"},
-            ].map(f=>(
-              <div key={f.key} style={{marginBottom:14}}>
-                <div style={{fontSize:11,color:C.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600}}>{f.label}</div>
-                <input placeholder={f.placeholder} value={form[f.key]} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))}
-                  style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",transition:"border-color 0.2s"}}
-                  onFocus={e=>e.target.style.borderColor=C.accent}
-                  onBlur={e=>e.target.style.borderColor=C.border}/>
+            {[{key:"name",label:"Full Name"},{key:"college",label:"College / University"},{key:"program",label:"Program"},{key:"semester",label:"Current Semester"}].map(f=>(
+              <div key={f.key} style={{marginBottom:12}}>
+                <div style={{fontSize:11,color:C.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>{f.label}</div>
+                <Input value={form[f.key]} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))} style={{width:"100%"}}/>
               </div>
             ))}
-            <div style={{display:"flex",gap:10,marginTop:20}}>
-              <button onClick={save} disabled={loading} style={{flex:1,background:C.accent,border:"none",color:"#000",padding:"11px 0",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:F}}>
-                {loading?"Saving...":"Save Changes"}
-              </button>
-              <button onClick={()=>setEditing(false)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"11px 20px",borderRadius:12,fontSize:13,cursor:"pointer",fontFamily:F}}>Cancel</button>
+            <div style={{display:"flex",gap:8,marginTop:16}}>
+              <Btn onClick={save}>{loading?"Saving...":"Save Changes"}</Btn>
+              <Btn onClick={()=>setEditing(false)} variant="ghost">Cancel</Btn>
             </div>
           </div>
         ):(
           <div>
-            {[
-              {label:"College",value:profile?.college,icon:"🏫"},
-              {label:"Program",value:profile?.program,icon:"📚"},
-              {label:"Semester",value:profile?.semester,icon:"📅"},
-            ].map(f=>(
-              <div key={f.label} style={{display:"flex",alignItems:"center",gap:14,padding:"14px 0",borderBottom:`1px solid ${C.border}`}}>
-                <div style={{width:36,height:36,borderRadius:10,background:C.surface,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{f.icon}</div>
-                <div>
-                  <div style={{fontSize:11,color:C.muted,marginBottom:2,textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600}}>{f.label}</div>
-                  <div style={{fontSize:14,fontWeight:500}}>{f.value||"—"}</div>
-                </div>
+            {[{label:"College",value:profile?.college},{label:"Program",value:profile?.program},{label:"Semester",value:profile?.semester}].map(f=>(
+              <div key={f.label} style={{marginBottom:16}}>
+                <div style={{fontSize:11,color:C.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>{f.label}</div>
+                <div style={{fontSize:14,fontWeight:500}}>{f.value||"—"}</div>
               </div>
             ))}
+            <div style={{marginTop:24,paddingTop:20,borderTop:`1px solid ${C.border}`}}>
+              <div style={{fontSize:12,color:C.muted,marginBottom:12}}>AI powered by Groq  · Data stored on Supabase</div>
+              <Btn onClick={onLogout} variant="danger" style={{width:"100%",padding:"10px 0",fontSize:13}}>Log Out</Btn>
+            </div>
           </div>
         )}
-      </div>
-
-      {/* App info + logout */}
-      <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingBottom:16,borderBottom:`1px solid ${C.border}`}}>
-          <div style={{width:36,height:36,borderRadius:10,background:C.accentDim,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>✦</div>
-          <div>
-            <div style={{fontSize:13,fontWeight:600}}>StudentOS</div>
-            <div style={{fontSize:11,color:C.muted}}>AI by Groq · Storage by Supabase</div>
-          </div>
-        </div>
-        <button onClick={onLogout} style={{
-          width:"100%",padding:"12px 0",
-          background:C.dangerDim,border:`1px solid ${C.danger}44`,
-          color:C.danger,borderRadius:12,fontSize:14,fontWeight:700,
-          cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
-        }}
-        onMouseEnter={e=>{e.currentTarget.style.background=C.danger;e.currentTarget.style.color="#000";}}
-        onMouseLeave={e=>{e.currentTarget.style.background=C.dangerDim;e.currentTarget.style.color=C.danger;}}>
-          Log Out
-        </button>
-      </div>
+      </Card>
     </div>
   );
 }
