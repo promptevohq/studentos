@@ -7,45 +7,49 @@ const supabase = createClient(
 );
 
 const C = {
-  bg:"#0A0C10",surface:"#111318",card:"#161B24",border:"#1E2530",
-  accent:"#4FFFB0",accentDim:"#1A3D2E",accentText:"#3DD68C",
-  warn:"#FFB830",warnDim:"#3D2E0A",danger:"#FF5252",dangerDim:"#3D1010",
-  blue:"#4FC3F7",blueDim:"#0D2233",purple:"#B39DDB",purpleDim:"#1E1833",
-  text:"#E8EDF5",muted:"#6B7A99",
+  bg:"#08090D",surface:"#0F1117",card:"#13171F",border:"#1C2333",
+  accent:"#4FFFB0",accentDim:"#122B20",accentText:"#3DD68C",
+  warn:"#FFB830",warnDim:"#2D2008",danger:"#FF5252",dangerDim:"#2D0D0D",
+  blue:"#4FC3F7",blueDim:"#091E30",purple:"#B39DDB",purpleDim:"#1A1428",
+  text:"#E8EDF5",muted:"#5A6A88",subtle:"#2A3347",
 };
 const F = "'DM Sans','Segoe UI',sans-serif";
 const M = "'DM Mono','Fira Code',monospace";
 
 const GS = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=DM+Mono:wght@400;500&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   html{-webkit-text-size-adjust:100%;}
-  body{background:#0A0C10;color:#E8EDF5;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;}
-  ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:#111318;}::-webkit-scrollbar-thumb{background:#1E2530;border-radius:2px;}
-  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  body{background:#08090D;color:#E8EDF5;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+  ::-webkit-scrollbar{width:3px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#1C2333;border-radius:4px;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
   @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-  input:-webkit-autofill{-webkit-box-shadow:0 0 0 30px #161B24 inset!important;-webkit-text-fill-color:#E8EDF5!important;}
+  @keyframes blink{0%,80%,100%{transform:scale(0.55);opacity:0.3}40%{transform:scale(1);opacity:1}}
+  input:-webkit-autofill{-webkit-box-shadow:0 0 0 30px #13171F inset!important;-webkit-text-fill-color:#E8EDF5!important;}
+  button{transition:opacity 0.15s ease,transform 0.12s ease;}
+  button:active:not(:disabled){transform:scale(0.96);}
   .desktop-sidebar{display:flex;}
   .bottom-nav{display:none;}
-  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
-  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-  .grid-4-exam{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
-  .att-card{display:flex;gap:16px;align-items:center;}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .grid-4-exam{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+  .att-card{display:flex;gap:16px;align-items:flex-start;}
   .chat-input-row{display:flex;gap:8px;align-items:flex-end;}
   @media(max-width:768px){
     .desktop-sidebar{display:none!important;}
-    .bottom-nav{display:flex!important;position:fixed;bottom:0;left:0;right:0;background:#111318;border-top:1px solid #1E2530;z-index:100;padding:8px 0;padding-bottom:env(safe-area-inset-bottom,8px);}
-    .main-content{padding:16px 16px 80px!important;max-width:100%!important;}
+    .bottom-nav{display:flex!important;position:fixed;bottom:0;left:0;right:0;background:#0F1117;border-top:1px solid #1C2333;z-index:100;padding:6px 0;padding-bottom:env(safe-area-inset-bottom,6px);}
+    .main-content{padding:16px 14px 88px!important;max-width:100%!important;}
     .grid-2{grid-template-columns:1fr!important;}
     .grid-4{grid-template-columns:1fr 1fr!important;}
     .grid-4-exam{grid-template-columns:1fr 1fr!important;}
     .att-card{flex-direction:column;align-items:flex-start!important;}
-    .page-header{font-size:18px!important;}
-    .stat-value{font-size:22px!important;}
-    .greeting{font-size:18px!important;}
-    .chat-input-row{position:fixed;bottom:72px;left:0;right:0;padding:10px 12px;background:#111318;border-top:1px solid #1E2530;z-index:99;}
-    .chat-messages{padding-bottom:130px!important;}
+    .page-header{font-size:17px!important;}
+    .stat-value{font-size:24px!important;}
+    .greeting{font-size:20px!important;}
+    .chat-input-row{position:fixed;bottom:72px;left:0;right:0;padding:10px 14px;background:#0F1117;border-top:1px solid #1C2333;z-index:99;}
+    .chat-messages{padding-bottom:140px!important;}
   }
 `;
 
@@ -63,7 +67,7 @@ const BHMS_DEFAULTS = {
   internal_max: 50,
 };
 
-const Badge = ({color,bg,children}) => <span style={{display:"inline-flex",background:bg||C.border,color:color||C.muted,fontSize:11,fontWeight:600,letterSpacing:"0.04em",padding:"3px 8px",borderRadius:6,textTransform:"uppercase"}}>{children}</span>;
+const Badge = ({color,bg,children}) => <span style={{display:"inline-flex",alignItems:"center",background:bg||C.subtle,color:color||C.muted,fontSize:10,fontWeight:700,letterSpacing:"0.06em",padding:"3px 9px",borderRadius:20,textTransform:"uppercase"}}>{children}</span>;
 
 const Ring = ({p,size=64,stroke=5,color}) => {
   const r=(size-stroke*2)/2,circ=2*Math.PI*r,off=circ-(p/100)*circ;
@@ -75,15 +79,15 @@ const Ring = ({p,size=64,stroke=5,color}) => {
   </svg>;
 };
 
-const Card = ({children,style,glow,className}) => <div className={className} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:16,padding:20,boxShadow:glow?`0 0 30px ${glow}22`:"none",animation:"fadeUp 0.3s ease both",...style}}>{children}</div>;
+const Card = ({children,style,glow,className,onClick}) => <div className={className} onClick={onClick} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:18,padding:18,boxShadow:glow?`0 0 32px ${glow}18,0 2px 16px #00000030`:"0 2px 12px #00000020",animation:"fadeUp 0.25s ease both",cursor:onClick?"pointer":"default",...style}}>{children}</div>;
 
 const Btn = ({onClick,children,variant="primary",style,disabled}) => {
   const styles = {
-    primary:{background:C.accent,border:"none",color:"#000",fontWeight:700},
-    danger:{background:C.dangerDim,border:`1px solid ${C.danger}44`,color:C.danger,fontWeight:600},
-    ghost:{background:"none",border:`1px solid ${C.border}`,color:C.muted,fontWeight:400},
+    primary:{background:C.accent,border:"none",color:"#000",fontWeight:700,boxShadow:`0 2px 12px ${C.accent}30`},
+    danger:{background:C.dangerDim,border:`1px solid ${C.danger}55`,color:C.danger,fontWeight:600},
+    ghost:{background:"transparent",border:`1px solid ${C.border}`,color:C.muted,fontWeight:500},
   };
-  return <button onClick={onClick} disabled={disabled} style={{fontSize:12,padding:"7px 14px",borderRadius:8,cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.5:1,fontFamily:F,...styles[variant],...style}}>{children}</button>;
+  return <button onClick={onClick} disabled={disabled} style={{fontSize:12,padding:"8px 16px",borderRadius:10,cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.45:1,fontFamily:F,letterSpacing:"0.01em",...styles[variant],...style}}>{children}</button>;
 };
 
 const Input = ({placeholder,value,onChange,type="text",style,rows}) =>
@@ -147,8 +151,16 @@ function Auth({onAuth}) {
     setLoading(true);setErr("");
     const {error}=await supabase.from("profiles").upsert({id:uid,name,college,program,semester});
     if(error){setErr(error.message);setLoading(false);return;}
-    const {data:{user}}=await supabase.auth.getUser();
-    onAuth(user);
+    const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  setErr("Please sign up or log in again.");
+  setLoading(false);
+  return;
+}
+
+onAuth(user);
+setLoading(false);
   }
   async function forgotPassword() {
     if(!email){setErr("Enter your email first");return;}
@@ -219,34 +231,38 @@ const NAV=[
 function Sidebar({active,onNav,profile,onLogout}) {
   const initials=profile?.name?profile.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase():"?";
   return (
-    <div className="desktop-sidebar" style={{width:220,minHeight:"100vh",background:C.surface,borderRight:`1px solid ${C.border}`,flexDirection:"column",position:"sticky",top:0,height:"100vh",overflowY:"auto"}}>
-      <div style={{padding:"28px 24px 20px",borderBottom:`1px solid ${C.border}`}}>
+    <div className="desktop-sidebar" style={{width:224,minHeight:"100vh",background:C.surface,borderRight:`1px solid ${C.border}`,flexDirection:"column",position:"sticky",top:0,height:"100vh",overflowY:"auto"}}>
+      {/* Logo */}
+      <div style={{padding:"24px 20px 18px",borderBottom:`1px solid ${C.border}`}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:32,height:32,background:C.accent,borderRadius:8,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:"#000"}}>S</div>
+          <div style={{width:34,height:34,background:`linear-gradient(135deg,${C.accent},#00C97A)`,borderRadius:10,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:800,color:"#000",flexShrink:0,boxShadow:`0 4px 12px ${C.accent}40`}}>S</div>
           <div>
-            <div style={{fontSize:15,fontWeight:700}}>StudentOS</div>
-            <div style={{fontSize:10,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>Academic OS</div>
+            <div style={{fontSize:14,fontWeight:800,letterSpacing:"-0.02em"}}>StudentOS</div>
+            <div style={{fontSize:10,color:C.muted,letterSpacing:"0.04em",textTransform:"uppercase",marginTop:1}}>Academic OS</div>
           </div>
         </div>
       </div>
-      <nav style={{padding:"16px 12px",flex:1}}>
+      {/* Nav items */}
+      <nav style={{padding:"12px 10px",flex:1}}>
         {NAV.map(item=>{
           const isActive=active===item.id;
-          return <button key={item.id} onClick={()=>onNav(item.id)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"10px 12px",background:isActive?C.accentDim:"transparent",border:"none",borderRadius:10,color:isActive?C.accent:C.muted,fontSize:13,fontWeight:isActive?600:400,cursor:"pointer",fontFamily:F,marginBottom:2,textAlign:"left"}}>
-            <span style={{fontSize:16}}>{item.icon}</span>{item.label}
-            {isActive&&<span style={{marginLeft:"auto",width:4,height:4,background:C.accent,borderRadius:"50%"}}/>}
+          return <button key={item.id} onClick={()=>onNav(item.id)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",padding:"9px 12px",background:isActive?`${C.accent}15`:"transparent",border:`1px solid ${isActive?C.accent+"30":"transparent"}`,borderRadius:12,color:isActive?C.accent:C.muted,fontSize:13,fontWeight:isActive?600:400,cursor:"pointer",fontFamily:F,marginBottom:2,textAlign:"left",transition:"all 0.15s ease"}}>
+            <span style={{fontSize:15,width:20,textAlign:"center"}}>{item.icon}</span>
+            <span style={{flex:1}}>{item.label}</span>
+            {isActive&&<span style={{width:5,height:5,background:C.accent,borderRadius:"50%",flexShrink:0,boxShadow:`0 0 6px ${C.accent}`}}/>}
           </button>;
         })}
       </nav>
-      <div style={{padding:16,borderTop:`1px solid ${C.border}`}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-          <div style={{width:36,height:36,borderRadius:10,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,fontWeight:700,color:C.accent}}>{initials}</div>
-          <div>
-            <div style={{fontSize:12,fontWeight:600}}>{profile?.name||"Student"}</div>
-            <div style={{fontSize:10,color:C.muted}}>{profile?.semester||""}</div>
+      {/* Profile footer */}
+      <div style={{padding:"14px 10px",borderTop:`1px solid ${C.border}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:C.card,borderRadius:12,border:`1px solid ${C.border}`,marginBottom:10}}>
+          <div style={{width:32,height:32,borderRadius:9,background:`linear-gradient(135deg,${C.accentDim},${C.card})`,border:`1px solid ${C.accent}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:C.accent,flexShrink:0}}>{initials}</div>
+          <div style={{minWidth:0,flex:1}}>
+            <div style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{profile?.name||"Student"}</div>
+            <div style={{fontSize:10,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{profile?.semester||profile?.program||""}</div>
           </div>
         </div>
-        <Btn onClick={onLogout} variant="danger" style={{width:"100%",padding:"7px 0"}}>Log Out</Btn>
+        <Btn onClick={onLogout} variant="danger" style={{width:"100%",padding:"8px 0",fontSize:12}}>Log Out</Btn>
       </div>
     </div>
   );
@@ -272,30 +288,31 @@ function BottomNav({active,onNav}) {
   return(
     <>
       {showMore&&(
-        <div onClick={()=>setShowMore(false)} style={{position:"fixed",inset:0,background:"#00000066",zIndex:99}}/>
+        <div onClick={()=>setShowMore(false)} style={{position:"fixed",inset:0,background:"#00000080",zIndex:99,backdropFilter:"blur(4px)"}}/>
       )}
       {showMore&&(
-        <div style={{position:"fixed",bottom:65,left:0,right:0,background:C.surface,borderTop:`1px solid ${C.border}`,zIndex:100,padding:"12px 0",animation:"fadeUp 0.2s ease"}}>
+        <div style={{position:"fixed",bottom:70,left:12,right:12,background:C.card,border:`1px solid ${C.border}`,borderRadius:20,zIndex:100,padding:"8px 0",animation:"fadeUp 0.2s ease",boxShadow:"0 8px 40px #00000060"}}>
           {moreNav.map(item=>{
             const isActive=active===item.id;
-            return <button key={item.id} onClick={()=>{onNav(item.id);setShowMore(false);}} style={{display:"flex",alignItems:"center",gap:16,width:"100%",padding:"14px 24px",background:"none",border:"none",color:isActive?C.accent:C.text,cursor:"pointer",fontFamily:F,fontSize:15,fontWeight:isActive?600:400,borderBottom:`1px solid ${C.border}`}}>
-              <span style={{fontSize:20}}>{item.icon}</span>{item.label}
-              {isActive&&<span style={{marginLeft:"auto",width:6,height:6,background:C.accent,borderRadius:"50%"}}/>}
+            return <button key={item.id} onClick={()=>{onNav(item.id);setShowMore(false);}} style={{display:"flex",alignItems:"center",gap:16,width:"100%",padding:"13px 20px",background:"none",border:"none",color:isActive?C.accent:C.text,cursor:"pointer",fontFamily:F,fontSize:14,fontWeight:isActive?600:400}}>
+              <span style={{fontSize:18,width:24,textAlign:"center"}}>{item.icon}</span>
+              <span style={{flex:1}}>{item.label}</span>
+              {isActive&&<span style={{width:6,height:6,background:C.accent,borderRadius:"50%",boxShadow:`0 0 8px ${C.accent}`}}/>}
             </button>;
           })}
         </div>
       )}
-      <div className="bottom-nav" style={{justifyContent:"space-around",alignItems:"center"}}>
+      <div className="bottom-nav" style={{justifyContent:"space-around",alignItems:"center",paddingLeft:8,paddingRight:8}}>
         {mainNav.map(item=>{
           const isActive=active===item.id;
-          return <button key={item.id} onClick={()=>{onNav(item.id);setShowMore(false);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",color:isActive?C.accent:C.muted,cursor:"pointer",fontFamily:F,padding:"4px 8px",minWidth:52,flex:1}}>
-            <span style={{fontSize:20}}>{item.icon}</span>
-            <span style={{fontSize:9,fontWeight:isActive?700:400}}>{item.label}</span>
+          return <button key={item.id} onClick={()=>{onNav(item.id);setShowMore(false);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:isActive?`${C.accent}12`:"none",border:"none",borderRadius:12,color:isActive?C.accent:C.muted,cursor:"pointer",fontFamily:F,padding:"6px 14px",flex:1,margin:"0 2px"}}>
+            <span style={{fontSize:18,lineHeight:1}}>{item.icon}</span>
+            <span style={{fontSize:9,fontWeight:isActive?700:500,letterSpacing:"0.02em"}}>{item.label}</span>
           </button>;
         })}
-        <button onClick={()=>setShowMore(!showMore)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:"none",border:"none",color:moreActive?C.accent:C.muted,cursor:"pointer",fontFamily:F,padding:"4px 8px",minWidth:52,flex:1}}>
-          <span style={{fontSize:20}}>⋯</span>
-          <span style={{fontSize:9,fontWeight:moreActive?700:400}}>More</span>
+        <button onClick={()=>setShowMore(!showMore)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3,background:moreActive?`${C.accent}12`:"none",border:"none",borderRadius:12,color:moreActive?C.accent:C.muted,cursor:"pointer",fontFamily:F,padding:"6px 14px",flex:1,margin:"0 2px"}}>
+          <span style={{fontSize:18,lineHeight:1,letterSpacing:2}}>•••</span>
+          <span style={{fontSize:9,fontWeight:moreActive?700:500,letterSpacing:"0.02em"}}>More</span>
         </button>
       </div>
     </>
@@ -308,248 +325,138 @@ function Dashboard({subjects,assignments,exams,scores,profile,onNav}) {
     const total=sub.total||0; return s+att(sub.attended||0,total);
   },0)/subjects.length):0;
   const pending=assignments.filter(a=>a.status!=="submitted").length;
-  const overdue=assignments.filter(a=>a.status!=="submitted"&&daysLeft(a.due)<0).length;
-  const nextExam=exams.length?[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date)).find(e=>daysLeft(e.date)>=0):null;
+  const nextExam=exams.length?[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date))[0]:null;
   const urgent=assignments.filter(a=>a.status!=="submitted"&&daysLeft(a.due)<=5).sort((a,b)=>daysLeft(a.due)-daysLeft(b.due));
   const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75&&(s.total||0)>0);
-  const upcomingExams=[...exams].filter(e=>daysLeft(e.date)>=0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4);
+
+  // performance summary
   const passedSubjects=scores.filter(s=>{
     const tp=s.theory_max>0?(s.theory_marks/s.theory_max)*100:100;
     const pp=s.practical_max>0?(s.practical_marks/s.practical_max)*100:100;
     return tp>=(s.theory_pass_pct||50)&&pp>=(s.practical_pass_pct||50);
   });
+
   const hour=new Date().getHours();
-  const greet=hour<5?"Good night":hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
-  const greetEmoji=hour<5?"🌙":hour<12?"🌅":hour<17?"☀️":"🌆";
-  const attColor=avgAtt>=75?C.accent:avgAtt>=60?C.warn:C.danger;
-  const attBg=avgAtt>=75?C.accentDim:avgAtt>=60?C.warnDim:C.dangerDim;
+  const greet=hour<12?"Good morning":hour<17?"Good afternoon":"Good evening";
+  const today=new Date().toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
 
-  const StatCard=({label,value,sub,color,bg,icon,onClick,delay=0})=>(
-    <div onClick={onClick} style={{
-      background:`linear-gradient(135deg,${bg} 0%,${C.card} 100%)`,
-      border:`1px solid ${color}33`,borderRadius:20,padding:"18px 16px",
-      cursor:onClick?"pointer":"default",animation:`fadeUp 0.4s ease ${delay}s both`,
-      transition:"transform 0.2s ease,box-shadow 0.2s ease",
-      boxShadow:`0 4px 24px ${color}11`,
-    }}
-    onMouseEnter={e=>{if(onClick){e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 32px ${color}22`;}}}
-    onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow=`0 4px 24px ${color}11`;}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}>
-        <div style={{width:36,height:36,borderRadius:10,background:`${color}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>{icon}</div>
-        {onClick&&<div style={{fontSize:10,color:color,opacity:0.7}}>→</div>}
+  return (
+    <div style={{animation:"fadeUp 0.25s ease"}}>
+
+      {/* ── Hero greeting ── */}
+      <div style={{background:`linear-gradient(135deg,${C.accentDim} 0%,${C.card} 60%)`,border:`1px solid ${C.accent}28`,borderRadius:22,padding:"22px 20px",marginBottom:18,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-28,right:-28,width:110,height:110,borderRadius:"50%",background:`${C.accent}07`,pointerEvents:"none"}}/>
+        <div style={{position:"absolute",bottom:-20,right:12,width:70,height:70,borderRadius:"50%",background:`${C.accent}05`,pointerEvents:"none"}}/>
+        <div style={{fontSize:11,color:C.accentText,fontWeight:700,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:6}}>{today}</div>
+        <div className="greeting" style={{fontSize:22,fontWeight:800,letterSpacing:"-0.03em",marginBottom:3}}>{greet}, {profile?.name?.split(" ")[0]||"Student"} 👋</div>
+        <div style={{fontSize:12,color:C.muted}}>{profile?.program||""}{profile?.college?` · ${profile.college}`:""}</div>
+        {(lowAtt.length>0||pending>0)&&(
+          <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:14}}>
+            {lowAtt.length>0&&<span style={{display:"inline-flex",alignItems:"center",gap:5,background:C.dangerDim,border:`1px solid ${C.danger}40`,color:C.danger,fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:20,letterSpacing:"0.03em"}}>⚠ {lowAtt.length} low attendance</span>}
+            {pending>0&&<span style={{display:"inline-flex",alignItems:"center",gap:5,background:C.warnDim,border:`1px solid ${C.warn}40`,color:C.warn,fontSize:10,fontWeight:700,padding:"4px 10px",borderRadius:20,letterSpacing:"0.03em"}}>◷ {pending} pending</span>}
+          </div>
+        )}
       </div>
-      <div style={{fontFamily:M,fontSize:26,fontWeight:700,color,lineHeight:1,marginBottom:4}}>{value}</div>
-      <div style={{fontSize:11,color:C.muted,fontWeight:500,textTransform:"uppercase",letterSpacing:"0.06em"}}>{label}</div>
-      {sub&&<div style={{fontSize:11,color,marginTop:4,opacity:0.8}}>{sub}</div>}
-    </div>
-  );
 
-  return(
-    <div style={{animation:"fadeUp 0.3s ease",maxWidth:900}}>
+      {/* ── Stat cards ── */}
+      <div className="grid-4" style={{marginBottom:18}}>
+        {[
+          {label:"Attendance",value:`${avgAtt}%`,sub:avgAtt>=75?"On track":"Below 75%",color:avgAtt>=75?C.accent:C.danger,bg:avgAtt>=75?C.accentDim:C.dangerDim,nav:"attendance"},
+          {label:"Passed",value:`${passedSubjects.length}/${scores.length}`,sub:"subjects",color:C.purple,bg:C.purpleDim,nav:"performance"},
+          {label:"Pending",value:pending,sub:"assignments",color:C.warn,bg:C.warnDim,nav:"assignments"},
+          {label:"Next Exam",value:nextExam?`${Math.max(0,daysLeft(nextExam.date))}d`:"—",sub:nextExam?nextExam.subject.slice(0,12):"none",color:C.blue,bg:C.blueDim,nav:"exams"},
+        ].map(s=>(
+          <button key={s.label} onClick={()=>onNav(s.nav)} style={{background:s.bg,border:`1px solid ${s.color}20`,borderRadius:16,padding:"14px 12px",cursor:"pointer",textAlign:"left",fontFamily:F,transition:"transform 0.15s ease,box-shadow 0.15s ease"}}
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow=`0 8px 24px ${s.color}18`;}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="";e.currentTarget.style.boxShadow="";}}>
+            <div className="stat-value" style={{fontSize:26,fontWeight:800,fontFamily:M,color:s.color,lineHeight:1,marginBottom:5}}>{s.value}</div>
+            <div style={{fontSize:10,color:s.color,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:2}}>{s.label}</div>
+            <div style={{fontSize:10,color:C.muted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.sub}</div>
+          </button>
+        ))}
+      </div>
 
-      {/* Hero */}
-      <div style={{
-        background:`linear-gradient(135deg,${C.accentDim} 0%,${C.card} 60%,${C.blueDim} 100%)`,
-        border:`1px solid ${C.border}`,borderRadius:24,padding:"28px 28px 24px",
-        marginBottom:20,position:"relative",overflow:"hidden",
-        animation:"fadeUp 0.3s ease both",
-      }}>
-        <div style={{position:"absolute",top:-40,right:-40,width:180,height:180,borderRadius:"50%",background:`${C.accent}08`,pointerEvents:"none"}}/>
-        <div style={{position:"absolute",bottom:-60,left:-20,width:140,height:140,borderRadius:"50%",background:`${C.blue}08`,pointerEvents:"none"}}/>
-        <div style={{position:"relative"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:16}}>
-            <div>
-              <div style={{fontSize:13,color:C.accentText,fontWeight:600,marginBottom:6,letterSpacing:"0.04em"}}>
-                {greetEmoji} {greet}
-              </div>
-              <div style={{fontSize:28,fontWeight:800,letterSpacing:"-0.03em",marginBottom:6,lineHeight:1.1}}>
-                {profile?.name?.split(" ")[0]||"Student"} 👋
-              </div>
-              <div style={{fontSize:13,color:C.muted}}>
-                {profile?.program||"BHMS"}{profile?.college?` · ${profile.college}`:""}{profile?.semester?` · ${profile.semester}`:""}
-              </div>
+      {/* ── Alert cards ── */}
+      <div className="grid-2" style={{marginBottom:16}}>
+        {/* Urgent deadlines */}
+        <Card style={{padding:0,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
+            <div style={{fontSize:13,fontWeight:700}}>Urgent Deadlines</div>
+            <button onClick={()=>onNav("assignments")} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:F}}>All →</button>
+          </div>
+          {urgent.length===0
+            ?<div style={{padding:"24px 16px",textAlign:"center"}}>
+              <div style={{fontSize:24,marginBottom:6}}>✓</div>
+              <div style={{color:C.accentText,fontSize:13,fontWeight:500}}>All clear</div>
+              <div style={{color:C.muted,fontSize:11,marginTop:3}}>No upcoming deadlines</div>
             </div>
-            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}>
-              <div style={{position:"relative",width:80,height:80}}>
-                <svg width={80} height={80} style={{transform:"rotate(-90deg)"}}>
-                  <circle cx={40} cy={40} r={32} fill="none" stroke={C.border} strokeWidth={6}/>
-                  <circle cx={40} cy={40} r={32} fill="none" stroke={attColor} strokeWidth={6}
-                    strokeDasharray={2*Math.PI*32}
-                    strokeDashoffset={2*Math.PI*32-(avgAtt/100)*2*Math.PI*32}
-                    strokeLinecap="round" style={{transition:"stroke-dashoffset 1s ease"}}/>
-                </svg>
-                <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
-                  <div style={{fontFamily:M,fontSize:16,fontWeight:700,color:attColor,lineHeight:1}}>{avgAtt}%</div>
-                  <div style={{fontSize:9,color:C.muted,marginTop:1}}>attend.</div>
+            :urgent.slice(0,3).map(a=>{const d=daysLeft(a.due);return(
+              <div key={a.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 16px",borderBottom:`1px solid ${C.border}`}}>
+                <div style={{minWidth:0,flex:1,paddingRight:10}}>
+                  <div style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:2}}>{a.title}</div>
+                  <div style={{fontSize:10,color:C.muted}}>{a.subject}</div>
+                </div>
+                <div style={{flexShrink:0,background:d<=2?C.dangerDim:d<=4?C.warnDim:C.subtle,border:`1px solid ${d<=2?C.danger:d<=4?C.warn:C.border}30`,borderRadius:9,padding:"4px 8px",textAlign:"center",minWidth:40}}>
+                  <div style={{fontSize:11,fontWeight:800,fontFamily:M,color:d<=2?C.danger:d<=4?C.warn:C.muted}}>{d===0?"Today":d<0?"Late":`${d}d`}</div>
                 </div>
               </div>
-              <div style={{fontSize:10,color:avgAtt>=75?C.accentText:C.danger,fontWeight:600,textAlign:"center"}}>
-                {avgAtt>=75?"✓ On track":"⚠ Below 75%"}
+            );})}
+        </Card>
+
+        {/* Attendance alerts */}
+        <Card style={{padding:0,overflow:"hidden"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
+            <div style={{fontSize:13,fontWeight:700}}>Attendance Alerts</div>
+            <button onClick={()=>onNav("attendance")} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:F}}>All →</button>
+          </div>
+          {lowAtt.length===0
+            ?<div style={{padding:"24px 16px",textAlign:"center"}}>
+              <div style={{fontSize:24,marginBottom:6}}>✓</div>
+              <div style={{color:C.accentText,fontSize:13,fontWeight:500}}>All above 75%</div>
+              <div style={{color:C.muted,fontSize:11,marginTop:3}}>Attendance looking good</div>
+            </div>
+            :lowAtt.map(s=>{const p=att(s.attended||0,s.total||0),needed=Math.ceil((0.75*(s.total||0)-(s.attended||0))/0.25);return(
+              <div key={s.id} style={{padding:"11px 16px",borderBottom:`1px solid ${C.border}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <span style={{fontSize:12,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,paddingRight:8}}>{s.name}</span>
+                  <span style={{fontFamily:M,fontSize:13,color:C.danger,fontWeight:800,flexShrink:0}}>{p}%</span>
+                </div>
+                <div style={{height:3,background:C.border,borderRadius:2,overflow:"hidden",marginBottom:5}}>
+                  <div style={{height:"100%",width:`${p}%`,background:C.danger,borderRadius:2}}/>
+                </div>
+                <div style={{fontSize:10,color:C.muted}}>Need <span style={{color:C.warn,fontWeight:600}}>{needed} more</span> classes to reach 75%</div>
               </div>
-            </div>
-          </div>
-          {overdue>0&&(
-            <div style={{marginTop:16,padding:"8px 14px",background:`${C.danger}15`,border:`1px solid ${C.danger}33`,borderRadius:10,fontSize:12,color:C.danger,display:"inline-flex",alignItems:"center",gap:6}}>
-              ⚠ {overdue} overdue assignment{overdue>1?"s":""} — check Assignments
-            </div>
-          )}
-        </div>
+            );})}
+        </Card>
       </div>
 
-      {/* Stat Cards */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:20}}>
-        <StatCard label="Attendance" value={`${avgAtt}%`} color={attColor} bg={attBg} icon="◎"
-          sub={avgAtt<75?`${lowAtt.length} subjects low`:subjects.length>0?"All looking good":"No subjects yet"}
-          onClick={()=>onNav("attendance")} delay={0}/>
-        <StatCard label="Passed" value={`${passedSubjects.length}/${scores.length}`} color={C.purple} bg={C.purpleDim} icon="▲"
-          sub={scores.length>0?`${Math.round((passedSubjects.length/scores.length)*100)||0}% pass rate`:"No scores yet"}
-          onClick={()=>onNav("performance")} delay={0.05}/>
-        <StatCard label="Assignments" value={pending} color={C.warn} bg={C.warnDim} icon="◈"
-          sub={overdue>0?`${overdue} overdue`:pending>0?"In progress":"All done!"}
-          onClick={()=>onNav("assignments")} delay={0.1}/>
-        <StatCard label="Next Exam" value={nextExam?`${daysLeft(nextExam.date)}d`:"—"} color={C.blue} bg={C.blueDim} icon="◷"
-          sub={nextExam?nextExam.subject:"No exams added"}
-          onClick={()=>onNav("exams")} delay={0.15}/>
-      </div>
-
-      {/* Main Grid */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:16}}>
-
-        {/* Upcoming Exams */}
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20,animation:"fadeUp 0.4s ease 0.2s both"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={{fontSize:14,fontWeight:700}}>Upcoming Exams</div>
-            <button onClick={()=>onNav("exams")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>See all →</button>
+      {/* ── Upcoming exams ── */}
+      {exams.length>0&&(
+        <Card style={{padding:0,overflow:"hidden",marginBottom:8}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:`1px solid ${C.border}`}}>
+            <div style={{fontSize:13,fontWeight:700}}>Upcoming Exams</div>
+            <button onClick={()=>onNav("exams")} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:F}}>All →</button>
           </div>
-          {upcomingExams.length===0
-            ?<div style={{textAlign:"center",padding:"24px 0"}}>
-              <div style={{fontSize:28,marginBottom:8}}>📅</div>
-              <div style={{color:C.muted,fontSize:13,marginBottom:12}}>No upcoming exams</div>
-              <button onClick={()=>onNav("exams")} style={{background:C.accentDim,border:`1px solid ${C.accent}44`,color:C.accent,borderRadius:8,padding:"6px 14px",fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>Add Exam</button>
-            </div>
-            :<div style={{display:"flex",flexDirection:"column",gap:10}}>
-              {upcomingExams.map((e,i)=>{
-                const d=daysLeft(e.date);
-                const col=d<=7?C.danger:d<=14?C.warn:C.blue;
-                const bg=d<=7?C.dangerDim:d<=14?C.warnDim:C.blueDim;
-                return(
-                  <div key={e.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 12px",background:bg,borderRadius:12,border:`1px solid ${col}22`}}>
-                    <div style={{textAlign:"center",minWidth:40}}>
-                      <div style={{fontFamily:M,fontSize:20,fontWeight:700,color:col,lineHeight:1}}>{d}</div>
-                      <div style={{fontSize:9,color:C.muted}}>days</div>
-                    </div>
-                    <div style={{width:1,height:32,background:C.border}}/>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:13,fontWeight:600,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.subject}</div>
-                      <div style={{fontSize:11,color:C.muted}}>{e.type} · {e.date}</div>
-                    </div>
-                    <div style={{width:8,height:8,borderRadius:"50%",background:col,flexShrink:0}}/>
-                  </div>
-                );
-              })}
-            </div>}
-        </div>
-
-        {/* Assignments */}
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20,animation:"fadeUp 0.4s ease 0.25s both"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={{fontSize:14,fontWeight:700}}>Assignments</div>
-            <button onClick={()=>onNav("assignments")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>See all →</button>
-          </div>
-          {urgent.length===0&&pending===0
-            ?<div style={{textAlign:"center",padding:"24px 0"}}>
-              <div style={{fontSize:28,marginBottom:8}}>✅</div>
-              <div style={{color:C.accentText,fontSize:13,fontWeight:600}}>All caught up!</div>
-              <div style={{color:C.muted,fontSize:12,marginTop:4}}>No pending assignments</div>
-            </div>
-            :urgent.length===0
-            ?<div style={{textAlign:"center",padding:"16px 0"}}>
-              <div style={{color:C.accentText,fontSize:13}}>✓ No urgent deadlines</div>
-              <div style={{color:C.muted,fontSize:12,marginTop:4}}>{pending} assignment{pending!==1?"s":""} in progress</div>
-            </div>
-            :<div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {urgent.slice(0,4).map(a=>{
-                const d=daysLeft(a.due);
-                const col=d<0?C.danger:d<=2?C.danger:d<=4?C.warn:C.muted;
-                const priCol={high:C.danger,medium:C.warn,low:C.accent};
-                return(
-                  <div key={a.id} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px",background:C.surface,borderRadius:12,border:`1px solid ${C.border}`}}>
-                    <div style={{width:3,height:"100%",minHeight:32,borderRadius:2,background:priCol[a.priority]||C.muted,flexShrink:0}}/>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:13,fontWeight:500,marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.title}</div>
-                      <div style={{fontSize:11,color:C.muted}}>{a.subject}</div>
-                    </div>
-                    <div style={{fontSize:11,color:col,fontWeight:700,fontFamily:M,flexShrink:0}}>
-                      {d<0?"OVERDUE":d===0?"TODAY":`${d}d`}
-                    </div>
-                  </div>
-                );
-              })}
-              {urgent.length>4&&<div style={{fontSize:12,color:C.muted,textAlign:"center",paddingTop:4}}>+{urgent.length-4} more</div>}
-            </div>}
-        </div>
-
-      </div>
-
-      {/* Attendance Alerts */}
-      {lowAtt.length>0&&(
-        <div style={{background:C.card,border:`1px solid ${C.danger}33`,borderRadius:20,padding:20,marginBottom:16,animation:"fadeUp 0.4s ease 0.3s both"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{width:8,height:8,borderRadius:"50%",background:C.danger,animation:"pulse 1.5s infinite"}}/>
-              <div style={{fontSize:14,fontWeight:700,color:C.danger}}>Attendance Alerts</div>
-            </div>
-            <button onClick={()=>onNav("attendance")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>Fix now →</button>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
-            {lowAtt.map(s=>{
-              const p=att(s.attended||0,s.total||0);
-              const needed=Math.ceil((0.75*(s.total||0)-(s.attended||0))/0.25);
+          <div className="grid-4-exam" style={{padding:14}}>
+            {[...exams].sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,4).map(e=>{
+              const d=daysLeft(e.date),col=d<=7?C.danger:d<=14?C.warn:C.blue;
               return(
-                <div key={s.id} style={{background:C.dangerDim,borderRadius:12,padding:"10px 14px",border:`1px solid ${C.danger}22`}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                    <div style={{fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",flex:1,paddingRight:8}}>{s.name}</div>
-                    <div style={{fontFamily:M,fontSize:14,fontWeight:700,color:C.danger,flexShrink:0}}>{p}%</div>
-                  </div>
-                  <div style={{height:4,background:`${C.danger}22`,borderRadius:2,marginBottom:6,overflow:"hidden"}}>
-                    <div style={{height:"100%",width:`${p}%`,background:C.danger,borderRadius:2,transition:"width 0.6s ease"}}/>
-                  </div>
-                  <div style={{fontSize:11,color:C.muted}}>Need <span style={{color:C.warn,fontWeight:600}}>{needed} more</span> class{needed!==1?"es":""} to reach 75%</div>
+                <div key={e.id} style={{background:C.surface,borderRadius:14,padding:"13px 11px",border:`1px solid ${col}18`,position:"relative",overflow:"hidden"}}>
+                  <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:col,opacity:0.6}}/>
+                  <div style={{fontSize:9,color:C.muted,textTransform:"uppercase",letterSpacing:"0.05em",marginBottom:5,marginTop:2}}>{e.type}</div>
+                  <div style={{fontSize:11,fontWeight:600,marginBottom:8,lineHeight:1.3,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>{e.subject}</div>
+                  <div style={{fontFamily:M,fontSize:24,fontWeight:800,color:col,lineHeight:1}}>{Math.max(0,d)}</div>
+                  <div style={{fontSize:9,color:C.muted,marginTop:2}}>days left</div>
                 </div>
               );
             })}
           </div>
-        </div>
+        </Card>
       )}
-
-      {/* Performance Summary */}
-      {scores.length>0&&(
-        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:20,padding:20,animation:"fadeUp 0.4s ease 0.35s both"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-            <div style={{fontSize:14,fontWeight:700}}>Performance Summary</div>
-            <button onClick={()=>onNav("performance")} style={{background:"none",border:"none",color:C.accentText,fontSize:12,cursor:"pointer",fontFamily:F,fontWeight:600}}>Details →</button>
-          </div>
-          <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
-            {scores.slice(0,6).map(s=>{
-              const tPct=s.theory_max>0?Math.round((s.theory_marks/s.theory_max)*100):null;
-              const pass=tPct===null||tPct>=(s.theory_pass_pct||50);
-              return(
-                <div key={s.id} style={{flex:"1 1 120px",background:pass?C.accentDim:C.dangerDim,borderRadius:12,padding:"10px 14px",border:`1px solid ${pass?C.accent+"33":C.danger+"33"}`}}>
-                  <div style={{fontSize:12,fontWeight:600,marginBottom:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.subject}</div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div style={{fontFamily:M,fontSize:18,fontWeight:700,color:pass?C.accent:C.danger}}>{tPct!==null?`${tPct}%`:"—"}</div>
-                    <div style={{fontSize:10,color:pass?C.accentText:C.danger,fontWeight:600}}>{pass?"PASS":"FAIL"}</div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
+
 // ── Study Guide ───────────────────────────────────────────────────────────────
 const BHMS_TOPICS = {
   "Organon": ["Aphorisms 1-10","Aphorisms 11-20","Aphorisms 21-30","Philosophy of Homoeopathy","Vital Force","Disease Classification","Drug Proving","Posology","Case Taking","Miasms"],
@@ -733,15 +640,16 @@ function StudyGuide({subjects,exams,userId}) {
   );
 }
 
+// ── Attendance (date-based logging) ───────────────────────────────────────────
 function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
   const [showAdd,setShowAdd]=useState(false);
   const [newS,setNewS]=useState({name:"",code:""});
   const [duration,setDuration]=useState("overall");
   const [customFrom,setCustomFrom]=useState("");
   const [customTo,setCustomTo]=useState("");
-  const [editingSub,setEditingSub]=useState(null);
-  const [editVals,setEditVals]=useState({attended:"",total:""});
-
+const [editingSub,setEditingSub]=useState(null);
+const [editVals,setEditVals]=useState({attended:"",total:""});
+  // compute date range
   function getRange() {
     const now=new Date(); now.setHours(23,59,59,999);
     const from=new Date();
@@ -749,7 +657,7 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
     else if(duration==="monthly"){from.setMonth(now.getMonth()-1);}
     else if(duration==="quarterly"){from.setMonth(now.getMonth()-3);}
     else if(duration==="custom"&&customFrom&&customTo){return {from:new Date(customFrom),to:new Date(customTo)};}
-    else{return null;}
+    else{return null;} // overall
     from.setHours(0,0,0,0);
     return {from,to:now};
   }
@@ -773,13 +681,13 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
     }
   }
 
-  async function saveManualEdit(sub) {
-    const attended=parseInt(editVals.attended)||0;
-    const total=parseInt(editVals.total)||0;
-    await supabase.from("subjects").update({attended,total}).eq("id",sub.id);
-    setSubjects(prev=>prev.map(s=>s.id===sub.id?{...s,attended,total}:s));
-    setEditingSub(null);
-  }
+async function saveManualEdit(sub) {
+  const attended=parseInt(editVals.attended)||0;
+  const total=parseInt(editVals.total)||0;
+  await supabase.from("subjects").update({attended,total}).eq("id",sub.id);
+  setSubjects(prev=>prev.map(s=>s.id===sub.id?{...s,attended,total}:s));
+  setEditingSub(null);
+}  
 
   async function addSubject() {
     if(!newS.name) return;
@@ -787,7 +695,6 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
     const {data,error}=await supabase.from("subjects").insert({user_id:userId,...newS,attended:0,total:0,color}).select().single();
     if(!error){setSubjects(prev=>[...prev,data]);setNewS({name:"",code:""});setShowAdd(false);}
   }
-
   async function deleteSubject(id) {
     await supabase.from("subjects").delete().eq("id",id);
     await supabase.from("attendance_log").delete().eq("subject_id",id);
@@ -795,6 +702,7 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
     setAttLogs(prev=>prev.filter(l=>l.subject_id!==id));
   }
 
+  // build chart data for selected range per subject
   function buildChartData(sub) {
     const logs=attLogs.filter(l=>l.subject_id===sub.id);
     if(logs.length===0) return [];
@@ -820,285 +728,172 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
   }
 
   const showChart=duration!=="overall"&&duration!=="custom";
-  const durations=["overall","weekly","monthly","quarterly","custom"];
 
   // Overall stats
-  const totalSubjects=subjects.length;
-  const goodSubjects=subjects.filter(s=>att(s.attended||0,s.total||0)>=75).length;
-  const avgAttendance=subjects.length?Math.round(subjects.reduce((s,sub)=>s+att(sub.attended||0,sub.total||0),0)/subjects.length):0;
+  const totalAttended=subjects.reduce((s,sub)=>s+(subjectStats(sub).attended),0);
+  const totalClasses=subjects.reduce((s,sub)=>s+(subjectStats(sub).total),0);
+  const overallPct=att(totalAttended,totalClasses);
 
   return (
-    <div style={{animation:"fadeUp 0.3s ease",maxWidth:900}}>
+    <div style={{animation:"fadeUp 0.25s ease"}}>
 
-      {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
-        <div>
-<h2 style={{fontSize:20,fontWeight:800,letterSpacing:"-0.02em",marginBottom:2,paddingTop:4}}>Attendance</h2>        </div>
-        <button onClick={()=>setShowAdd(!showAdd)} style={{
-          display:"flex",alignItems:"center",gap:6,
-          background:showAdd?C.surface:C.accent,
-          border:`1px solid ${showAdd?C.border:C.accent}`,
-          color:showAdd?C.muted:"#000",
-          padding:"9px 16px",borderRadius:12,fontSize:13,fontWeight:700,
-          cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
-        }}>
-          {showAdd?"✕ Cancel":"+ Subject"}
-        </button>
+      {/* ── Header ── */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+        <h2 className="page-header" style={{fontSize:18,fontWeight:800,letterSpacing:"-0.02em"}}>Attendance</h2>
+        <Btn onClick={()=>setShowAdd(!showAdd)} style={{borderRadius:10,padding:"8px 16px"}}>+ Subject</Btn>
       </div>
 
-      {/* Summary strip */}
+      {/* ── Overall summary bar ── */}
       {subjects.length>0&&(
-        <div style={{
-          display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20,
-          animation:"fadeUp 0.3s ease 0.05s both",
-        }}>
-          {[
-            {label:"Avg Attendance",value:`${avgAttendance}%`,color:avgAttendance>=75?C.accent:C.danger,bg:avgAttendance>=75?C.accentDim:C.dangerDim},
-            {label:"Subjects OK",value:`${goodSubjects}/${totalSubjects}`,color:C.blue,bg:C.blueDim},
-            {label:"Need Attention",value:totalSubjects-goodSubjects,color:totalSubjects-goodSubjects>0?C.warn:C.accent,bg:totalSubjects-goodSubjects>0?C.warnDim:C.accentDim},
-          ].map(s=>(
-            <div key={s.label} style={{background:s.bg,border:`1px solid ${s.color}22`,borderRadius:14,padding:"12px 14px"}}>
-              <div style={{fontFamily:M,fontSize:22,fontWeight:700,color:s.color,lineHeight:1,marginBottom:4}}>{s.value}</div>
-              <div style={{fontSize:11,color:C.muted,fontWeight:500,textTransform:"uppercase",letterSpacing:"0.05em"}}>{s.label}</div>
+        <div style={{background:overallPct>=75?C.accentDim:C.dangerDim,border:`1px solid ${overallPct>=75?C.accent:C.danger}28`,borderRadius:16,padding:"14px 18px",marginBottom:16,display:"flex",alignItems:"center",gap:16}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:11,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:4}}>Overall Attendance</div>
+            <div style={{height:6,background:C.border,borderRadius:3,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${overallPct}%`,background:overallPct>=75?C.accent:C.danger,borderRadius:3,transition:"width 0.5s ease"}}/>
             </div>
-          ))}
+            <div style={{fontSize:11,color:C.muted,marginTop:4}}>{totalAttended} of {totalClasses} classes attended</div>
+          </div>
+          <div style={{fontFamily:M,fontSize:32,fontWeight:800,color:overallPct>=75?C.accent:C.danger,lineHeight:1,flexShrink:0}}>{overallPct}%</div>
         </div>
       )}
 
-      {/* Add Subject Form */}
-      {showAdd&&(
-        <div style={{
-          background:C.surface,border:`1px solid ${C.accent}44`,borderRadius:16,
-          padding:20,marginBottom:20,animation:"fadeUp 0.2s ease both",
-        }}>
-          <div style={{fontSize:13,fontWeight:700,marginBottom:14,color:C.accentText}}>Add New Subject</div>
-          <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
-            <input placeholder="Subject name" value={newS.name} onChange={e=>setNewS(p=>({...p,name:e.target.value}))}
-              onKeyDown={e=>e.key==="Enter"&&addSubject()}
-              style={{flex:"2 1 160px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
-            <input placeholder="Code (optional)" value={newS.code} onChange={e=>setNewS(p=>({...p,code:e.target.value}))}
-              style={{flex:"1 1 100px",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"10px 14px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none"}}/>
-          </div>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={addSubject} style={{background:C.accent,border:"none",color:"#000",padding:"9px 20px",borderRadius:10,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Subject</button>
-            <button onClick={()=>setShowAdd(false)} style={{background:"none",border:`1px solid ${C.border}`,color:C.muted,padding:"9px 16px",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F}}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Duration Selector */}
-      <div style={{
-        display:"flex",gap:4,marginBottom:20,padding:4,
-        background:C.surface,borderRadius:14,border:`1px solid ${C.border}`,
-        overflowX:"auto",flexShrink:0,
-      }}>
-        {durations.map(d=>(
-          <button key={d} onClick={()=>setDuration(d)} style={{
-            flex:"0 0 auto",padding:"7px 16px",
-            background:duration===d?C.accent:"transparent",
-            border:"none",
-            color:duration===d?"#000":C.muted,
-            fontSize:12,fontWeight:duration===d?700:500,
-            borderRadius:10,cursor:"pointer",fontFamily:F,
-            textTransform:"capitalize",whiteSpace:"nowrap",
-            transition:"all 0.2s ease",
-          }}>{d}</button>
+      {/* ── Duration pills ── */}
+      <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",paddingBottom:2}}>
+        {["overall","weekly","monthly","quarterly","custom"].map(d=>(
+          <button key={d} onClick={()=>setDuration(d)} style={{flex:"0 0 auto",padding:"7px 16px",background:duration===d?C.accent:C.card,border:`1px solid ${duration===d?C.accent:C.border}`,color:duration===d?"#000":C.muted,fontSize:11,fontWeight:duration===d?700:500,borderRadius:20,cursor:"pointer",fontFamily:F,textTransform:"capitalize",whiteSpace:"nowrap",transition:"all 0.15s ease"}}>
+            {d}
+          </button>
         ))}
       </div>
 
-      {/* Custom Range */}
+      {/* Custom date inputs */}
       {duration==="custom"&&(
-        <div style={{
-          display:"flex",gap:10,flexWrap:"wrap",marginBottom:20,
-          padding:16,background:C.surface,borderRadius:14,border:`1px solid ${C.border}`,
-        }}>
-          <div style={{flex:1,minWidth:140}}>
-            <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>From</div>
-            <input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}
-              style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
+        <Card style={{marginBottom:14,background:C.surface,padding:14}}>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,color:C.muted,marginBottom:4}}>From</div>
+              <Input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)} style={{width:"100%"}}/>
+            </div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:11,color:C.muted,marginBottom:4}}>To</div>
+              <Input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)} style={{width:"100%"}}/>
+            </div>
           </div>
-          <div style={{flex:1,minWidth:140}}>
-            <div style={{fontSize:11,color:C.muted,marginBottom:6,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.05em"}}>To</div>
-            <input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)}
-              style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}/>
-          </div>
-        </div>
+        </Card>
       )}
 
-      {/* Subject List */}
+      {/* Add subject form */}
+      {showAdd&&(
+        <Card style={{marginBottom:14,background:C.surface,padding:16}}>
+          <div style={{fontSize:12,fontWeight:700,marginBottom:12,color:C.muted,textTransform:"uppercase",letterSpacing:"0.06em"}}>New Subject</div>
+          <div style={{display:"flex",gap:10,marginBottom:12,flexWrap:"wrap"}}>
+            <Input placeholder="Subject name" value={newS.name} onChange={e=>setNewS(p=>({...p,name:e.target.value}))} style={{flex:"2 1 140px"}}/>
+            <Input placeholder="Code (opt.)" value={newS.code} onChange={e=>setNewS(p=>({...p,code:e.target.value}))} style={{flex:"1 1 80px"}}/>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <Btn onClick={addSubject}>Add Subject</Btn>
+            <Btn onClick={()=>setShowAdd(false)} variant="ghost">Cancel</Btn>
+          </div>
+        </Card>
+      )}
+
+      {/* Subject cards */}
       {subjects.length===0
-        ?<div style={{
-          textAlign:"center",padding:"60px 20px",
-          background:C.card,border:`1px solid ${C.border}`,borderRadius:20,
-        }}>
-          <div style={{fontSize:48,marginBottom:16}}>📚</div>
-          <div style={{fontSize:16,fontWeight:700,marginBottom:8}}>No subjects yet</div>
-          <div style={{fontSize:13,color:C.muted,marginBottom:20}}>Add your first subject to start tracking attendance</div>
-          <button onClick={()=>setShowAdd(true)} style={{background:C.accent,border:"none",color:"#000",padding:"10px 24px",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:F}}>Add Subject</button>
-        </div>
-        :<div style={{display:"flex",flexDirection:"column",gap:14}}>
-          {subjects.map((sub,idx)=>{
+        ?<Card style={{textAlign:"center",padding:52}}>
+          <div style={{fontSize:36,marginBottom:12}}>📚</div>
+          <div style={{fontSize:14,fontWeight:600,marginBottom:6}}>No subjects yet</div>
+          <div style={{color:C.muted,fontSize:13}}>Add your first subject to start tracking attendance.</div>
+        </Card>
+        :<div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {subjects.map(sub=>{
             const {attended,total}=subjectStats(sub);
             const p=att(attended,total);
             const needed=p<75&&total>0?Math.ceil((0.75*total-attended)/0.25):0;
             const canMiss=p>=75&&total>0?Math.floor((attended-0.75*total)/0.75):0;
             const chartData=showChart?buildChartData(sub):[];
-            const isLow=p<75&&total>0;
-            const col=sub.color||SCOLS[idx%SCOLS.length];
-            const statusColor=p>=75?C.accent:p>=60?C.warn:C.danger;
+            const isEditing=editingSub===sub.id;
+            const accentCol=sub.color||C.accent;
 
-            return(
-              <div key={sub.id} style={{
-                background:C.card,
-                border:`1px solid ${isLow?C.danger+"44":C.border}`,
-                borderRadius:20,overflow:"hidden",
-                boxShadow:isLow?`0 0 20px ${C.danger}11`:"none",
-                animation:`fadeUp 0.3s ease ${idx*0.05}s both`,
-                transition:"box-shadow 0.2s ease",
-              }}>
-                {/* Top accent line */}
-                <div style={{height:3,background:`linear-gradient(90deg,${col} ${p}%,${C.border} ${p}%)`,transition:"background 0.6s ease"}}/>
+            return (
+              <div key={sub.id} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:18,overflow:"hidden",boxShadow:"0 2px 12px #00000020",position:"relative"}}>
+                {/* Color accent stripe */}
+                <div style={{position:"absolute",top:0,left:0,bottom:0,width:3,background:accentCol,borderRadius:"18px 0 0 18px",opacity:0.8}}/>
 
-                <div style={{padding:20}}>
-                  {/* Subject header */}
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
-                    <div style={{display:"flex",alignItems:"center",gap:12}}>
-                      <div style={{
-                        width:44,height:44,borderRadius:12,
-                        background:`${col}22`,border:`1px solid ${col}44`,
-                        display:"flex",alignItems:"center",justifyContent:"center",
-                        fontSize:18,fontWeight:700,color:col,flexShrink:0,
-                      }}>
-                        {sub.name.charAt(0).toUpperCase()}
+                <div style={{padding:"16px 16px 14px 20px"}}>
+                  {/* Top row */}
+                  <div className="att-card" style={{alignItems:"flex-start"}}>
+                    <div style={{flex:1,minWidth:0,paddingRight:12}}>
+                      {/* Subject name + code */}
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4,flexWrap:"wrap"}}>
+                        <div style={{fontSize:15,fontWeight:700,letterSpacing:"-0.01em"}}>{sub.name}</div>
+                        {sub.code&&<span style={{fontSize:10,fontFamily:M,color:C.muted,background:C.subtle,padding:"2px 7px",borderRadius:5}}>{sub.code}</span>}
                       </div>
-                      <div>
-                        <div style={{fontSize:15,fontWeight:700,marginBottom:2}}>{sub.name}
-                          {sub.code&&<span style={{color:C.muted,fontSize:11,fontFamily:M,marginLeft:8,fontWeight:400}}>{sub.code}</span>}
-                        </div>
-                        <div style={{fontSize:12,color:C.muted}}>
-                          {attended}/{total} classes
-                          {duration!=="overall"&&<span style={{color:col,marginLeft:4}}>({duration})</span>}
-                        </div>
+
+                      {/* Class count */}
+                      <div style={{fontSize:12,color:C.muted,marginBottom:8}}>
+                        <span style={{fontFamily:M,fontWeight:600,color:C.text}}>{attended}</span>
+                        <span> of </span>
+                        <span style={{fontFamily:M,fontWeight:600,color:C.text}}>{total}</span>
+                        <span> classes{duration!=="overall"&&<span style={{color:accentCol,marginLeft:4}}>({duration})</span>}</span>
+                      </div>
+
+                      {/* Status pill */}
+                      {total>0&&(
+                        p<75
+                          ?<div style={{display:"inline-flex",alignItems:"center",gap:5,background:C.dangerDim,border:`1px solid ${C.danger}30`,borderRadius:20,padding:"4px 10px",marginBottom:10}}>
+                            <span style={{fontSize:10,fontWeight:700,color:C.danger}}>⚠ Need {needed} more class{needed!==1?"es":""} for 75%</span>
+                          </div>
+                          :<div style={{display:"inline-flex",alignItems:"center",gap:5,background:C.accentDim,border:`1px solid ${C.accent}30`,borderRadius:20,padding:"4px 10px",marginBottom:10}}>
+                            <span style={{fontSize:10,fontWeight:700,color:C.accentText}}>✓ Can miss {canMiss} more class{canMiss!==1?"es":""}</span>
+                          </div>
+                      )}
+                      {total===0&&<div style={{marginBottom:10}}/>}
+
+                      {/* Action buttons */}
+                      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                        <button onClick={()=>markClass(sub,"present")} style={{display:"inline-flex",alignItems:"center",gap:5,background:C.accentDim,border:`1px solid ${C.accent}50`,color:C.accent,fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:10,cursor:"pointer",fontFamily:F}}>
+                          ✓ Present
+                        </button>
+                        <button onClick={()=>markClass(sub,"absent")} style={{display:"inline-flex",alignItems:"center",gap:5,background:C.dangerDim,border:`1px solid ${C.danger}50`,color:C.danger,fontSize:12,fontWeight:700,padding:"7px 14px",borderRadius:10,cursor:"pointer",fontFamily:F}}>
+                          ✗ Absent
+                        </button>
+                        <button onClick={()=>{setEditingSub(isEditing?null:sub.id);setEditVals({attended:sub.attended||0,total:sub.total||0});}} style={{display:"inline-flex",alignItems:"center",gap:5,background:isEditing?C.blueDim:"transparent",border:`1px solid ${isEditing?C.blue:C.border}`,color:isEditing?C.blue:C.muted,fontSize:12,fontWeight:600,padding:"7px 12px",borderRadius:10,cursor:"pointer",fontFamily:F}}>
+                          {isEditing?"✕ Close":"✎ Set"}
+                        </button>
+                        <button onClick={()=>deleteSubject(sub.id)} style={{background:"transparent",border:"none",color:C.muted,cursor:"pointer",fontSize:18,lineHeight:1,padding:"4px 6px",marginLeft:"auto",borderRadius:8}}>×</button>
                       </div>
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:10}}>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontFamily:M,fontSize:22,fontWeight:700,color:statusColor,lineHeight:1}}>{p}%</div>
-                        <div style={{fontSize:10,color:statusColor,marginTop:2,fontWeight:600}}>
-                          {p>=75?"✓ Good":p>=60?"⚠ Low":"✗ Critical"}
-                        </div>
-                      </div>
-                      <button onClick={()=>deleteSubject(sub.id)} style={{
-                        background:"none",border:"none",color:C.muted,cursor:"pointer",
-                        fontSize:18,lineHeight:1,padding:"4px",borderRadius:6,
-                        transition:"color 0.2s",
-                      }}
-                      onMouseEnter={e=>e.currentTarget.style.color=C.danger}
-                      onMouseLeave={e=>e.currentTarget.style.color=C.muted}>×</button>
-                    </div>
+
+                    {/* Ring */}
+                    <Ring p={p} size={72} stroke={5} color={accentCol}/>
                   </div>
 
-                  {/* Progress bar */}
-                  <div style={{marginBottom:14}}>
-                    <div style={{height:6,background:C.border,borderRadius:3,overflow:"hidden",marginBottom:6}}>
-                      <div style={{
-                        height:"100%",
-                        width:`${Math.min(p,100)}%`,
-                        background:`linear-gradient(90deg,${statusColor},${col})`,
-                        borderRadius:3,transition:"width 0.6s ease",
-                      }}/>
-                    </div>
-                    <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:C.muted}}>
-                      <span>0%</span>
-                      <span style={{color:statusColor,fontWeight:600}}>
-                        {p<75?`Need ${needed} more class${needed!==1?"es":""} for 75%`:`Can miss ${canMiss} more class${canMiss!==1?"es":""}`}
-                      </span>
-                      <span>100%</span>
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    <button onClick={()=>markClass(sub,"present")} style={{
-                      flex:"1 1 80px",padding:"10px 14px",
-                      background:C.accentDim,border:`1px solid ${C.accent}44`,
-                      color:C.accent,borderRadius:12,fontSize:12,fontWeight:700,
-                      cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
-                    }}
-                    onMouseEnter={e=>{e.currentTarget.style.background=C.accent;e.currentTarget.style.color="#000";}}
-                    onMouseLeave={e=>{e.currentTarget.style.background=C.accentDim;e.currentTarget.style.color=C.accent;}}>
-                      ✓ Present
-                    </button>
-                    <button onClick={()=>markClass(sub,"absent")} style={{
-                      flex:"1 1 80px",padding:"10px 14px",
-                      background:C.dangerDim,border:`1px solid ${C.danger}44`,
-                      color:C.danger,borderRadius:12,fontSize:12,fontWeight:700,
-                      cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
-                    }}
-                    onMouseEnter={e=>{e.currentTarget.style.background=C.danger;e.currentTarget.style.color="#000";}}
-                    onMouseLeave={e=>{e.currentTarget.style.background=C.dangerDim;e.currentTarget.style.color=C.danger;}}>
-                      ✗ Absent
-                    </button>
-                    <button onClick={()=>{setEditingSub(editingSub===sub.id?null:sub.id);setEditVals({attended:sub.attended||0,total:sub.total||0});}} style={{
-                      padding:"10px 14px",
-                      background:editingSub===sub.id?C.blueDim:"none",
-                      border:`1px solid ${C.border}`,
-                      color:editingSub===sub.id?C.blue:C.muted,
-                      borderRadius:12,fontSize:12,fontWeight:600,
-                      cursor:"pointer",fontFamily:F,transition:"all 0.2s ease",
-                    }}>✎ Edit</button>
-                  </div>
-
-                  {/* Manual edit form */}
-                  {editingSub===sub.id&&(
-                    <div style={{
-                      marginTop:14,padding:16,
-                      background:C.surface,borderRadius:12,
-                      border:`1px solid ${C.blue}33`,
-                      animation:"fadeUp 0.2s ease both",
-                    }}>
-                      <div style={{fontSize:12,color:C.blue,fontWeight:600,marginBottom:12,textTransform:"uppercase",letterSpacing:"0.05em"}}>Manual Edit</div>
+                  {/* Manual entry panel */}
+                  {isEditing&&(
+                    <div style={{marginTop:14,paddingTop:14,borderTop:`1px solid ${C.border}`,animation:"fadeIn 0.2s ease"}}>
+                      <div style={{fontSize:11,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Set Manually</div>
                       <div style={{display:"flex",gap:10,alignItems:"flex-end",flexWrap:"wrap"}}>
                         <div style={{flex:1,minWidth:80}}>
-                          <div style={{fontSize:11,color:C.muted,marginBottom:6}}>Classes Attended</div>
-                          <input type="number" value={editVals.attended} onChange={e=>setEditVals(p=>({...p,attended:e.target.value}))}
-                            style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:14,fontFamily:M,fontWeight:700,outline:"none",textAlign:"center"}}/>
+                          <div style={{fontSize:11,color:C.muted,marginBottom:5}}>Classes Attended</div>
+                          <Input type="number" value={editVals.attended} onChange={e=>setEditVals(p=>({...p,attended:e.target.value}))} style={{width:"100%",fontSize:16,fontFamily:M,fontWeight:600}}/>
                         </div>
-                        <div style={{color:C.muted,fontSize:18,paddingBottom:8}}>/</div>
                         <div style={{flex:1,minWidth:80}}>
-                          <div style={{fontSize:11,color:C.muted,marginBottom:6}}>Total Classes</div>
-                          <input type="number" value={editVals.total} onChange={e=>setEditVals(p=>({...p,total:e.target.value}))}
-                            style={{width:"100%",background:C.card,border:`1px solid ${C.border}`,color:C.text,padding:"9px 12px",borderRadius:10,fontSize:14,fontFamily:M,fontWeight:700,outline:"none",textAlign:"center"}}/>
+                          <div style={{fontSize:11,color:C.muted,marginBottom:5}}>Total Classes</div>
+                          <Input type="number" value={editVals.total} onChange={e=>setEditVals(p=>({...p,total:e.target.value}))} style={{width:"100%",fontSize:16,fontFamily:M,fontWeight:600}}/>
                         </div>
-                        <button onClick={()=>saveManualEdit(sub)} style={{
-                          padding:"10px 20px",background:C.blue,border:"none",
-                          color:"#000",borderRadius:10,fontSize:13,fontWeight:700,
-                          cursor:"pointer",fontFamily:F,flexShrink:0,
-                        }}>Save</button>
-                        <button onClick={()=>setEditingSub(null)} style={{
-                          padding:"10px 14px",background:"none",border:`1px solid ${C.border}`,
-                          color:C.muted,borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F,
-                        }}>✕</button>
+                        <Btn onClick={()=>saveManualEdit(sub)} style={{padding:"10px 18px",flexShrink:0}}>Save</Btn>
                       </div>
-                      {editVals.attended&&editVals.total&&(
-                        <div style={{marginTop:10,fontSize:12,color:C.muted}}>
-                          Preview: <span style={{color:att(parseInt(editVals.attended),parseInt(editVals.total))>=75?C.accent:C.danger,fontWeight:700}}>
-                            {att(parseInt(editVals.attended)||0,parseInt(editVals.total)||0)}%
-                          </span>
-                          {att(parseInt(editVals.attended)||0,parseInt(editVals.total)||0)>=75?" ✓ Will be above 75%":" ✗ Still below 75%"}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Chart */}
-                  {showChart&&chartData.length>0&&(
-                    <div style={{marginTop:16,paddingTop:16,borderTop:`1px solid ${C.border}`}}>
-                      <div style={{fontSize:11,color:C.muted,marginBottom:10,textTransform:"uppercase",letterSpacing:"0.05em",fontWeight:600}}>{duration} trend</div>
-                      <BarChart data={chartData} color={col} height={90}/>
                     </div>
                   )}
                 </div>
+
+                {/* Chart */}
+                {showChart&&chartData.length>0&&(
+                  <div style={{padding:"12px 20px 14px",borderTop:`1px solid ${C.border}`,background:C.surface}}>
+                    <div style={{fontSize:10,color:C.muted,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.06em"}}>{duration} trend</div>
+                    <BarChart data={chartData} color={accentCol} height={80}/>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1106,7 +901,6 @@ function Attendance({subjects,setSubjects,attLogs,setAttLogs,userId}) {
     </div>
   );
 }
-
 
 // ── Assignments ───────────────────────────────────────────────────────────────
 function Assignments({assignments,setAssignments,userId}) {
@@ -1360,14 +1154,11 @@ function Performance({scores,setScores,userId,profile}) {
       {/* Add form */}
       {showAdd&&<Card style={{marginBottom:16,background:C.surface}}>
         <div style={{fontSize:13,fontWeight:600,marginBottom:12}}>Add Score Record</div>
-        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}>
-          <Input placeholder="Subject" value={newS.subject} onChange={e=>setNewS(p=>({...p,subject:e.target.value}))} style={{flex:"2 1 140px"}}/>
-          <Select value={["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)?newS.exam_type:"Custom"} onChange={e=>{if(e.target.value==="Custom"){setNewS(p=>({...p,exam_type:""}))}else{setNewS(p=>({...p,exam_type:e.target.value}));}}} style={{flex:"1 1 100px"}}>
-            <option>Internal</option><option>Midterm</option><option>Final</option><option>Practical</option><option>Viva</option><option value="Custom">Custom</option>
-          </Select>
-          {!["Internal","Midterm","Final","Practical","Viva"].includes(newS.exam_type)&&(
-            <Input placeholder="Exam name (e.g. Sessional 1)" value={newS.exam_type} onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))} style={{flex:"2 1 140px"}}/>
-          )}
+        <div style={{display:"flex",gap:10,marginBottom:10,flexWrap:"wrap"}}> <Input placeholder="Exam type (e.g. Internal, Midterm, Sessional 1...)" 
+  value={newS.exam_type} 
+  onChange={e=>setNewS(p=>({...p,exam_type:e.target.value}))} 
+  style={{flex:"1 1 140px"}}
+/>
           <Input type="date" value={newS.date} onChange={e=>setNewS(p=>({...p,date:e.target.value}))} style={{flex:"1 1 120px"}}/>
         </div>
         {/* Theory */}
@@ -1476,8 +1267,16 @@ function Performance({scores,setScores,userId,profile}) {
   );
 }
 
-function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
-  const [conversations,setConversations]=useState([]);
+function AIChat({
+  subjects,
+  setSubjects,
+  assignments,
+  exams,
+  scores,
+  profile,
+  attLogs,
+  userId
+}) {  const [conversations,setConversations]=useState([]);
   const [activeConv,setActiveConv]=useState(null);
   const [messages,setMessages]=useState([]);
   const [input,setInput]=useState("");
@@ -1487,6 +1286,7 @@ function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
   const [newTitle,setNewTitle]=useState("");
   const [showArchived,setShowArchived]=useState(false);
   const bottomRef=useRef(null);
+
 
   useEffect(()=>{loadConversations();},[]);
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[messages]);
@@ -1539,20 +1339,19 @@ function AIChat({subjects,assignments,exams,scores,profile,attLogs,userId}) {
   }
 
   function buildContext() {
+
     const avgAtt=subjects.length?Math.round(subjects.reduce((s,sub)=>s+att(sub.attended||0,sub.total||0),0)/subjects.length):0;
     const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75).map(s=>s.name);
     const pending=assignments.filter(a=>a.status!=="submitted").length;
     const upcoming=exams.filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,3);
-    const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
-    return `You are an academic AI assistant built into StudentOS — a web app for BHMS students at Monark Homoeopathic Medical College, Vahelal, Ahmedabad (Monark University).
+  const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
 
+return `
 ABOUT StudentOS:
-StudentOS is a free academic management platform for BHMS students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
-
+StudentOS is a free academic management platform for all students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
 STUDENT PROFILE:
-Name: ${profile?.name||"Student"}
-Program: ${profile?.program||"BHMS"} | Semester: ${profile?.semester||"2nd BHMS"} | College: ${profile?.college||"Monark Homoeopathic Medical College"}
-
+Name: ${profile?.name || "Student"}
+Program: ${profile?.program || "Not specified"} | Semester: ${profile?.semester || "Not specified"} | College: ${profile?.college || "Not specified"}
 CURRENT ATTENDANCE:
 Average: ${avgAtt}% ${avgAtt<75?"⚠️ BELOW 75% - CRITICAL":"✓ Good"}
 ${subjectDetails}
@@ -1561,23 +1360,38 @@ Low attendance subjects: ${lowAtt.join(", ")||"None"}
 ASSIGNMENTS: ${pending} pending tasks
 UPCOMING EXAMS: ${upcoming.map(e=>`${e.subject} in ${daysLeft(e.date)} days`).join(", ")||"None"}
 
-BHMS 2nd YEAR SUBJECTS:
-- Organon of Medicine & Homoeopathic Philosophy (Theory + Practical)
-- Materia Medica / HMM (Homoeopathic Materia Medica)
-- Pathology & Microbiology (Theory + Practical)  
-- Forensic Medicine & Toxicology / FMT (Theory + Practical)
-- Surgery including ENT, Eye, Dental (Theory + Practical)
-- Gynaecology & Obstetrics (Theory + Practical)
-- Practice of Medicine / POM (Theory)
-- Repertory (Theory)
-- Yoga & Naturopathy / PT
+ACADEMIC DATA:
+Subjects: ${subjectDetails || "No subjects added"}
 
-NCH RULES: Minimum 75% attendance required. With medical certificate, 65% may be condoned by Principal.
+ATTENDANCE:
+Average: ${avgAtt}%
 
-BHMS MARKING SCHEME: Theory max 150, Practical/Oral max 100, Internal Assessment max 50. Passing: 50% in each.
+ASSIGNMENTS:
+${pending} pending tasks
 
-Be helpful, concise, and personalized. You know the student's data. Answer academic questions, help with study plans, explain Homoeopathic concepts, and give attendance/exam advice.`;
-  }
+UPCOMING EXAMS:
+${upcoming.map(e=>`${e.subject}`).join(", ") || "None"}
+
+AI RULES:
+- Answer using the student's actual data from this context.
+- If asked what to study next, prioritize:
+  1. Upcoming exams
+  2. Low attendance subjects
+  3. Subjects with low scores
+- Create practical study plans when requested.
+- Create daily, weekly, or exam preparation schedules when requested.
+- Never invent subjects that do not exist in the student's profile.
+- Use attendance, assignments, exams, and scores to give recommendations.
+
+Only use the student's actual stored data. If information is missing, say it has not been added yet. Do not assume subjects, attendance, college, semester, or academic rules.
+Be helpful, concise, and personalized. You know the student's data. Answer academic questions, help with study plans, explain concepts from the student's actual course only, and give attendance and exam advice.
+
+Never assume a course, subjects, syllabus, or academic program.
+Only use data stored in the profile, subjects, assignments, exams, and attendance.
+If subjects are empty, say "No subjects have been added yet."
+Never generate BHMS subjects unless they exist in the stored data.
+`;
+}
 
   async function send() {
     if(!input.trim()||loading) return;
@@ -1610,8 +1424,95 @@ Be helpful, concise, and personalized. You know the student's data. Answer acade
         headers:{"Content-Type":"application/json","Authorization":`Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13enBmcnJvYWdyaHVlbnBkY2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5NzU5NDgsImV4cCI6MjA5NTU1MTk0OH0.1XaAfisI75Iafk_tvGRoQNXDXYTzR7Zqsowl2Fb_dM4`},
         body:JSON.stringify({message:userText,context:buildContext(),history}),
       });
-      const data=await res.json();
-      if(data.reply){
+      const data = await res.json();
+
+try {
+  const action = JSON.parse(data.reply);
+console.log("ACTION =", action);
+if(action.action === "add_subject"){
+
+  const color = SCOLS[subjects.length % SCOLS.length];
+
+  const { data:newSubject, error } = await supabase
+    .from("subjects")
+    .insert({
+      user_id: userId,
+      name: action.name,
+      code: "",
+      attended: 0,
+      total: 0,
+      color
+    })
+    .select()
+    .single();
+
+if(error){
+  console.error(error);
+  return;
+}
+
+setSubjects(prev => [...prev, newSubject]);
+alert("Subject added: " + action.name);
+console.log("NEW SUBJECT:", newSubject);
+console.log("ERROR:", error);
+  return;
+}
+if(action.action === "delete_subject"){
+
+  const subject = subjects.find(
+    s => s.name.toLowerCase() === action.name.toLowerCase()
+  );
+
+  if(subject){
+
+    const { error } = await supabase
+      .from("subjects")
+      .delete()
+      .eq("id", subject.id);
+
+    if(!error){
+      setSubjects(prev =>
+        prev.filter(s => s.id !== subject.id)
+      );
+
+      alert("Subject deleted: " + action.name);
+    }
+  }
+
+  return;
+}
+} catch(err) {}
+try {
+  const action = JSON.parse(data.reply);
+
+  if(action.action === "add_subject"){
+
+    const color = SCOLS[subjects.length % SCOLS.length];
+
+    const { data:newSubject, error } = await supabase
+      .from("subjects")
+      .insert({
+        user_id: userId,
+        name: action.name,
+        code: "",
+        attended: 0,
+        total: 0,
+        color
+      })
+      .select()
+      .single();
+
+    if(!error){
+      setSubjects(prev => [...prev, newSubject]);
+      alert("Subject added: " + action.name);
+    }
+
+    return;
+  }
+} catch(err) {
+  console.log("ACTION ERROR:", err);
+}
+if(data.reply){
         const aiMsg={role:"ai",content:data.reply,conversation_id:activeConv.id,user_id:userId};
         const {data:savedAi}=await supabase.from("ai_messages").insert(aiMsg).select().single();
         setMessages(prev=>[...prev,savedAi]);
@@ -1626,44 +1527,61 @@ Be helpful, concise, and personalized. You know the student's data. Answer acade
 
   const activeConvs=conversations.filter(c=>!c.archived);
   const archivedConvs=conversations.filter(c=>c.archived);
-  const quickPrompts=["Analyze my attendance","What should I study next?","Explain Organon basics","Create a study plan"];
+  const quickPrompts=["Analyze my attendance","What should I study next?","Create a study plan","Explain a hard topic"];
 
   return (
-    <div style={{animation:"fadeUp 0.3s ease",display:"flex",gap:12,height:"calc(100vh - 120px)"}}>
-      {/* Sidebar */}
+    <div style={{animation:"fadeUp 0.25s ease",display:"flex",gap:0,height:"calc(100vh - 120px)",borderRadius:18,overflow:"hidden",border:`1px solid ${C.border}`,background:C.card}}>
+
+      {/* ── Sidebar ── */}
       {showSidebar&&(
-        <div style={{width:220,flexShrink:0,display:"flex",flexDirection:"column",gap:8,overflowY:"auto"}}>
-          <Btn onClick={newChat} style={{width:"100%",padding:"9px 0",fontSize:12}}>+ New Chat</Btn>
-          <div style={{flex:1,overflowY:"auto"}}>
-            {activeConvs.length===0&&<div style={{color:C.muted,fontSize:12,textAlign:"center",padding:16}}>No conversations yet</div>}
-            {activeConvs.map(conv=>(
-              <div key={conv.id} onClick={()=>selectConv(conv)} style={{padding:"8px 10px",borderRadius:8,background:activeConv?.id===conv.id?C.accentDim:C.card,border:`1px solid ${activeConv?.id===conv.id?C.accent:C.border}`,marginBottom:4,cursor:"pointer",position:"relative",group:true}}>
-                {editingTitle===conv.id?(
-                  <input value={newTitle} onChange={e=>setNewTitle(e.target.value)}
-                    onKeyDown={e=>{if(e.key==="Enter")renameConv(conv.id,newTitle);if(e.key==="Escape")setEditingTitle(null);}}
-                    autoFocus onClick={e=>e.stopPropagation()}
-                    style={{width:"100%",background:"transparent",border:"none",color:C.text,fontSize:12,fontFamily:F,outline:"none"}}/>
-                ):(
-                  <div style={{fontSize:12,fontWeight:activeConv?.id===conv.id?600:400,color:activeConv?.id===conv.id?C.accent:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginBottom:4}}>{conv.title}</div>
-                )}
-                <div style={{display:"flex",gap:4,marginTop:4}}>
-                  <button onClick={e=>{e.stopPropagation();setEditingTitle(conv.id);setNewTitle(conv.title);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,padding:"1px 4px",fontFamily:F}}>✏️</button>
-                  <button onClick={e=>{e.stopPropagation();archiveConv(conv.id);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,padding:"1px 4px",fontFamily:F}}>📦</button>
-                  <button onClick={e=>{e.stopPropagation();if(confirm("Delete this conversation?"))deleteConv(conv.id);}} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:10,padding:"1px 4px",fontFamily:F}}>🗑️</button>
-                </div>
+        <div style={{width:230,flexShrink:0,display:"flex",flexDirection:"column",background:C.surface,borderRight:`1px solid ${C.border}`}}>
+          {/* Sidebar header */}
+          <div style={{padding:"14px 12px 10px"}}>
+            <button onClick={newChat} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"9px 0",background:`linear-gradient(135deg,${C.accent},#00C97A)`,border:"none",borderRadius:12,color:"#000",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:F,boxShadow:`0 4px 14px ${C.accent}30`}}>
+              ✦ New Chat
+            </button>
+          </div>
+
+          {/* Conversation list */}
+          <div style={{flex:1,overflowY:"auto",padding:"0 8px 8px"}}>
+            {activeConvs.length===0&&(
+              <div style={{color:C.muted,fontSize:12,textAlign:"center",padding:"24px 12px",lineHeight:1.6}}>
+                No conversations yet.<br/>Start a new chat above.
               </div>
-            ))}
+            )}
+            {activeConvs.map(conv=>{
+              const isActive=activeConv?.id===conv.id;
+              return (
+                <div key={conv.id} onClick={()=>selectConv(conv)} style={{padding:"9px 10px",borderRadius:10,background:isActive?`${C.accent}12`:"transparent",border:`1px solid ${isActive?C.accent+"30":"transparent"}`,marginBottom:2,cursor:"pointer",transition:"all 0.12s ease"}}>
+                  {editingTitle===conv.id?(
+                    <input value={newTitle} onChange={e=>setNewTitle(e.target.value)}
+                      onKeyDown={e=>{if(e.key==="Enter")renameConv(conv.id,newTitle);if(e.key==="Escape")setEditingTitle(null);}}
+                      autoFocus onClick={e=>e.stopPropagation()}
+                      style={{width:"100%",background:"transparent",border:"none",color:C.text,fontSize:12,fontFamily:F,outline:"none"}}/>
+                  ):(
+                    <div style={{fontSize:12,fontWeight:isActive?600:400,color:isActive?C.accent:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginBottom:5}}>{conv.title}</div>
+                  )}
+                  <div style={{display:"flex",gap:2}}>
+                    <button onClick={e=>{e.stopPropagation();setEditingTitle(conv.id);setNewTitle(conv.title);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:11,padding:"2px 5px",borderRadius:5,fontFamily:F}}>✏</button>
+                    <button onClick={e=>{e.stopPropagation();archiveConv(conv.id);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:11,padding:"2px 5px",borderRadius:5,fontFamily:F}}>▣</button>
+                    <button onClick={e=>{e.stopPropagation();if(confirm("Delete this conversation?"))deleteConv(conv.id);}} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:11,padding:"2px 5px",borderRadius:5,fontFamily:F}}>✕</button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Archived section */}
             {archivedConvs.length>0&&(
-              <div>
-                <button onClick={()=>setShowArchived(!showArchived)} style={{background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",fontFamily:F,padding:"8px 0",width:"100%",textAlign:"left"}}>
-                  {showArchived?"▼":"►"} Archived ({archivedConvs.length})
+              <div style={{marginTop:8}}>
+                <button onClick={()=>setShowArchived(!showArchived)} style={{background:"none",border:"none",color:C.muted,fontSize:10,cursor:"pointer",fontFamily:F,padding:"6px 10px",width:"100%",textAlign:"left",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em"}}>
+                  {showArchived?"▾":"▸"} Archived ({archivedConvs.length})
                 </button>
                 {showArchived&&archivedConvs.map(conv=>(
-                  <div key={conv.id} onClick={()=>selectConv(conv)} style={{padding:"8px 10px",borderRadius:8,background:C.surface,border:`1px solid ${C.border}`,marginBottom:4,cursor:"pointer",opacity:0.6}}>
-                    <div style={{fontSize:11,color:C.muted,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{conv.title}</div>
-                    <div style={{display:"flex",gap:4,marginTop:4}}>
-                      <button onClick={e=>{e.stopPropagation();archiveConv(conv.id);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,fontFamily:F}}>↩️ Unarchive</button>
-                      <button onClick={e=>{e.stopPropagation();if(confirm("Delete?"))deleteConv(conv.id);}} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:10,fontFamily:F}}>🗑️</button>
+                  <div key={conv.id} onClick={()=>selectConv(conv)} style={{padding:"8px 10px",borderRadius:10,background:"transparent",border:`1px solid ${C.border}`,marginBottom:2,cursor:"pointer",opacity:0.55}}>
+                    <div style={{fontSize:11,color:C.muted,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",marginBottom:4}}>{conv.title}</div>
+                    <div style={{display:"flex",gap:4}}>
+                      <button onClick={e=>{e.stopPropagation();archiveConv(conv.id);}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:10,fontFamily:F}}>↩ Restore</button>
+                      <button onClick={e=>{e.stopPropagation();if(confirm("Delete?"))deleteConv(conv.id);}} style={{background:"none",border:"none",color:C.danger,cursor:"pointer",fontSize:10,fontFamily:F}}>✕</button>
                     </div>
                   </div>
                 ))}
@@ -1673,27 +1591,35 @@ Be helpful, concise, and personalized. You know the student's data. Answer acade
         </div>
       )}
 
-      {/* Chat area */}
+      {/* ── Chat area ── */}
       <div style={{flex:1,display:"flex",flexDirection:"column",minWidth:0}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <button onClick={()=>setShowSidebar(!showSidebar)} style={{background:C.card,border:`1px solid ${C.border}`,color:C.muted,borderRadius:8,padding:"4px 8px",cursor:"pointer",fontSize:14}}>☰</button>
-            <h2 style={{fontSize:15,fontWeight:700}}>{activeConv?.title||"AI Assistant ✦"}</h2>
+
+        {/* Chat header */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <button onClick={()=>setShowSidebar(!showSidebar)} style={{background:C.surface,border:`1px solid ${C.border}`,color:C.muted,borderRadius:9,padding:"5px 9px",cursor:"pointer",fontSize:13,lineHeight:1}}>☰</button>
+            <div>
+              <div style={{fontSize:13,fontWeight:700,lineHeight:1.2}}>{activeConv?.title||"AI Assistant"}</div>
+              <div style={{fontSize:10,color:C.muted,marginTop:1}}>Powered by Groq</div>
+            </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <div style={{width:7,height:7,borderRadius:"50%",background:C.accent,animation:"pulse 2s infinite"}}/>
-            <span style={{fontSize:11,color:C.accentText}}>Groq AI</span>
+            <div style={{width:6,height:6,borderRadius:"50%",background:C.accent,boxShadow:`0 0 8px ${C.accent}`,animation:"pulse 2s infinite"}}/>
+            <span style={{fontSize:11,color:C.accentText,fontWeight:600}}>Online</span>
           </div>
         </div>
 
+        {/* Messages / Empty state */}
         {!activeConv?(
-          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
-            <div style={{fontSize:32}}>✦</div>
-            <div style={{fontSize:15,fontWeight:600}}>Start a conversation</div>
-            <div style={{fontSize:13,color:C.muted}}>Click "New Chat" or pick a quick prompt</div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center",maxWidth:400}}>
+          <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:20,padding:24}}>
+            <div style={{width:64,height:64,borderRadius:20,background:`linear-gradient(135deg,${C.accentDim},${C.card})`,border:`1px solid ${C.accent}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,boxShadow:`0 8px 24px ${C.accent}18`}}>✦</div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:16,fontWeight:700,marginBottom:6}}>AI Academic Assistant</div>
+              <div style={{fontSize:13,color:C.muted,maxWidth:260,lineHeight:1.6}}>Ask about your attendance, get study plans, or explore any topic from your courses.</div>
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center",maxWidth:380}}>
               {quickPrompts.map(q=>(
-                <button key={q} onClick={async()=>{await newChat();setInput(q);}} style={{padding:"8px 14px",background:C.card,border:`1px solid ${C.border}`,color:C.muted,fontSize:12,borderRadius:20,cursor:"pointer",fontFamily:F}}>
+                <button key={q} onClick={async()=>{const {data}=await supabase.from("ai_conversations").insert({user_id:userId,title:"New Chat"}).select().single();if(data){setConversations(prev=>[data,...prev]);setActiveConv(data);setMessages([]);setInput(q);}}} style={{padding:"8px 16px",background:C.surface,border:`1px solid ${C.border}`,color:C.text,fontSize:12,borderRadius:20,cursor:"pointer",fontFamily:F,fontWeight:500}}>
                   {q}
                 </button>
               ))}
@@ -1701,29 +1627,52 @@ Be helpful, concise, and personalized. You know the student's data. Answer acade
           </div>
         ):(
           <>
-            <div className="chat-messages" style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:12,paddingBottom:16}}>
-              {messages.length===0&&<div style={{color:C.muted,fontSize:13,textAlign:"center",padding:32}}>Send a message to start</div>}
+            <div className="chat-messages" style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",gap:10,padding:"16px",paddingBottom:16}}>
+              {messages.length===0&&(
+                <div style={{color:C.muted,fontSize:13,textAlign:"center",padding:"32px 0",lineHeight:1.6}}>
+                  No messages yet.<br/>Send a message to start.
+                </div>
+              )}
               {messages.map((m,i)=>(
-                <div key={m.id||i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start"}}>
-                  {m.role==="ai"&&<div style={{width:28,height:28,borderRadius:8,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,marginRight:8,flexShrink:0,alignSelf:"flex-end"}}>✦</div>}
-                  <div style={{maxWidth:"80%",padding:"10px 14px",borderRadius:m.role==="user"?"16px 16px 4px 16px":"16px 16px 16px 4px",background:m.role==="user"?C.accent:C.card,color:m.role==="user"?"#000":C.text,fontSize:13,lineHeight:1.6,border:m.role==="ai"?`1px solid ${C.border}`:"none",whiteSpace:"pre-wrap"}}>
+                <div key={m.id||i} style={{display:"flex",justifyContent:m.role==="user"?"flex-end":"flex-start",gap:10,alignItems:"flex-end"}}>
+                  {m.role==="ai"&&(
+                    <div style={{width:30,height:30,borderRadius:10,background:`linear-gradient(135deg,${C.accentDim},${C.card})`,border:`1px solid ${C.accent}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>✦</div>
+                  )}
+                  <div style={{maxWidth:"78%",padding:"10px 14px",borderRadius:m.role==="user"?"18px 18px 5px 18px":"18px 18px 18px 5px",background:m.role==="user"?`linear-gradient(135deg,${C.accent},#00C97A)`:C.surface,color:m.role==="user"?"#000":C.text,fontSize:13,lineHeight:1.65,border:m.role==="ai"?`1px solid ${C.border}`:"none",whiteSpace:"pre-wrap",fontWeight:m.role==="user"?500:400}}>
                     {m.content}
                   </div>
+                  {m.role==="user"&&(
+                    <div style={{width:30,height:30,borderRadius:10,background:C.subtle,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,flexShrink:0,color:C.muted}}>U</div>
+                  )}
                 </div>
               ))}
               {loading&&(
-                <div style={{display:"flex",alignItems:"center",gap:8}}>
-                  <div style={{width:28,height:28,borderRadius:8,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12}}>✦</div>
-                  <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:"16px 16px 16px 4px",padding:"10px 14px"}}>
-                    <div style={{display:"flex",gap:4}}>{[0,1,2].map(i=><div key={i} style={{width:6,height:6,borderRadius:"50%",background:C.accent,animation:`pulse 1.2s ${i*0.2}s infinite`}}/>)}</div>
+                <div style={{display:"flex",alignItems:"flex-end",gap:10}}>
+                  <div style={{width:30,height:30,borderRadius:10,background:`linear-gradient(135deg,${C.accentDim},${C.card})`,border:`1px solid ${C.accent}40`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,flexShrink:0}}>✦</div>
+                  <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"18px 18px 18px 5px",padding:"12px 16px"}}>
+                    <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                      {[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:C.accent,animation:`blink 1.4s ${i*0.2}s infinite`}}/>)}
+                    </div>
                   </div>
                 </div>
               )}
               <div ref={bottomRef}/>
             </div>
-            <div className="chat-input-row" style={{flexShrink:0,paddingTop:8}}>
-              <Input placeholder="Ask anything..." value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} style={{flex:1}}/>
-              <Btn onClick={send} disabled={loading||!input.trim()} style={{padding:"9px 16px",flexShrink:0}}>{loading?"...":"Send"}</Btn>
+
+            {/* Input row */}
+            <div className="chat-input-row" style={{flexShrink:0,padding:"10px 14px",borderTop:`1px solid ${C.border}`,background:C.card}}>
+              <input
+                placeholder="Ask anything about your studies..."
+                value={input}
+                onChange={e=>setInput(e.target.value)}
+                onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
+                style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,color:C.text,padding:"11px 14px",borderRadius:12,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark",transition:"border-color 0.15s ease"}}
+                onFocus={e=>e.target.style.borderColor=`${C.accent}50`}
+                onBlur={e=>e.target.style.borderColor=C.border}
+              />
+              <button onClick={send} disabled={loading||!input.trim()} style={{flexShrink:0,width:42,height:42,borderRadius:12,background:input.trim()&&!loading?`linear-gradient(135deg,${C.accent},#00C97A)`:`${C.accent}20`,border:"none",display:"flex",alignItems:"center",justifyContent:"center",fontSize:17,cursor:loading||!input.trim()?"not-allowed":"pointer",opacity:loading||!input.trim()?0.4:1,transition:"all 0.15s ease"}}>
+                {loading?"⋯":"➤"}
+              </button>
             </div>
           </>
         )}
@@ -1924,8 +1873,16 @@ export default function App() {
     exams:<Exams exams={exams} setExams={setExams} userId={user.id}/>,
     performance:<Performance scores={scores} setScores={setScores} userId={user.id} profile={profile}/>,
     study:<StudyGuide subjects={subjects} exams={exams} userId={user.id}/>,
-    ai:<AIChat subjects={subjects} assignments={assignments} exams={exams} scores={scores} profile={profile} attLogs={attLogs} userId={user.id}/>,
-    timetable:<Timetable timetable={timetable} setTimetable={setTimetable} userId={user.id} subjects={subjects}/>,
+ai:<AIChat
+  subjects={subjects}
+  setSubjects={setSubjects}
+  assignments={assignments}
+  exams={exams}
+  scores={scores}
+  profile={profile}
+  attLogs={attLogs}
+  userId={user.id}
+/>,    timetable:<Timetable timetable={timetable} setTimetable={setTimetable} userId={user.id} subjects={subjects}/>,
     profile:<Profile profile={profile} setProfile={setProfile} userId={user.id} onLogout={logout}/>,
   };
 
