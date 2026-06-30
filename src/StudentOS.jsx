@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { COURSE_CATEGORIES, COURSES, getCourseNames, getCourseYears, getCourseSubjects } from "./courseData.js";
 
 const supabase = createClient(
   "https://mwzpfrroagrhuenpdclt.supabase.co",
@@ -1339,59 +1340,96 @@ function AIChat({
   }
 
   function buildContext() {
+    const avgAtt = subjects.length ? Math.round(subjects.reduce((s,sub) => s + att(sub.attended||0, sub.total||0), 0) / subjects.length) : 0;
+    const lowAtt = subjects.filter(s => att(s.attended||0, s.total||0) < 75).map(s => `${s.name} (${att(s.attended||0, s.total||0)}%)`);
+    const goodAtt = subjects.filter(s => att(s.attended||0, s.total||0) >= 75).map(s => `${s.name} (${att(s.attended||0, s.total||0)}%)`);
+    const pending = assignments.filter(a => a.status !== "submitted");
+    const submitted = assignments.filter(a => a.status === "submitted");
+    const upcoming = exams.filter(e => daysLeft(e.date) >= 0).sort((a,b) => new Date(a.date) - new Date(b.date));
+    const past = exams.filter(e => daysLeft(e.date) < 0);
+    const subjectDetails = subjects.map(s => `  - ${s.name}: ${s.attended||0}/${s.total||0} classes attended (${att(s.attended||0, s.total||0)}%)${att(s.attended||0,s.total||0)<75?" ⚠ BELOW 75%":""}`).join("\n");
 
-    const avgAtt=subjects.length?Math.round(subjects.reduce((s,sub)=>s+att(sub.attended||0,sub.total||0),0)/subjects.length):0;
-    const lowAtt=subjects.filter(s=>att(s.attended||0,s.total||0)<75).map(s=>s.name);
-    const pending=assignments.filter(a=>a.status!=="submitted").length;
-    const upcoming=exams.filter(e=>daysLeft(e.date)>0).sort((a,b)=>new Date(a.date)-new Date(b.date)).slice(0,3);
-  const subjectDetails = subjects.map(s => `${s.name}: ${s.attended||0}/${s.total||0} classes (${att(s.attended||0,s.total||0)}%)`).join(", ");
+    // Get standard syllabus for this course+year from courseData
+    const courseCategory = Object.keys(COURSES).find(cat => Object.keys(COURSES[cat]).includes(profile?.program));
+    const syllabusSubjects = courseCategory && profile?.program && profile?.semester
+      ? getCourseSubjects(courseCategory, profile.program, profile.semester)
+      : [];
+    const syllabusText = syllabusSubjects.length > 0
+      ? `Standard syllabus subjects for ${profile?.program} ${profile?.semester}:\n${syllabusSubjects.map(s => `  - ${s}`).join("\n")}`
+      : "";
 
-return `
-ABOUT StudentOS:
-StudentOS is a free academic management platform for all students. Features: Attendance tracking, Assignment management, Exam countdown, Performance/Marks tracking, Timetable, AI assistant (you).
-STUDENT PROFILE:
+    // Score summary
+    const scoresSummary = scores.length > 0
+      ? scores.map(s => {
+          const tp = s.theory_max > 0 ? Math.round((s.theory_marks/s.theory_max)*100) : null;
+          const pp = s.practical_max > 0 ? Math.round((s.practical_marks/s.practical_max)*100) : null;
+          return `  - ${s.subject}: Theory ${tp !== null ? tp+"%" : "N/A"}, Practical ${pp !== null ? pp+"%" : "N/A"}`;
+        }).join("\n")
+      : "  No marks entered yet.";
+
+    return `
+You are an AI academic assistant inside StudentOS. You have full access to this student's academic data. Use it to give specific, personalized advice.
+
+═══════════════════════════════════
+STUDENT PROFILE
+═══════════════════════════════════
 Name: ${profile?.name || "Student"}
-Program: ${profile?.program || "Not specified"} | Semester: ${profile?.semester || "Not specified"} | College: ${profile?.college || "Not specified"}
-CURRENT ATTENDANCE:
-Average: ${avgAtt}% ${avgAtt<75?"⚠️ BELOW 75% - CRITICAL":"✓ Good"}
-${subjectDetails}
-Low attendance subjects: ${lowAtt.join(", ")||"None"}
+Course / Program: ${profile?.program || "Not specified"}
+Current Year / Semester: ${profile?.semester || "Not specified"}
+College: ${profile?.college || "Not specified"}
 
-ASSIGNMENTS: ${pending} pending tasks
-UPCOMING EXAMS: ${upcoming.map(e=>`${e.subject} in ${daysLeft(e.date)} days`).join(", ")||"None"}
+═══════════════════════════════════
+OFFICIAL COURSE SYLLABUS (from courseData)
+═══════════════════════════════════
+${syllabusText || "Course not found in database — use only the subjects the student has added manually."}
 
-ACADEMIC DATA:
-Subjects: ${subjectDetails || "No subjects added"}
+This is the OFFICIAL standard syllabus for this course and year. Use this to:
+- Suggest topics to study within each subject
+- Identify if the student is missing any standard subjects
+- Give subject-specific academic advice
+- Create study plans based on the actual course curriculum
 
-ATTENDANCE:
-Average: ${avgAtt}%
+═══════════════════════════════════
+ATTENDANCE (${avgAtt}% overall ${avgAtt < 75 ? "⚠ CRITICAL — BELOW 75%" : "✓ Good"})
+═══════════════════════════════════
+${subjects.length > 0 ? subjectDetails : "  No subjects added yet."}
 
-ASSIGNMENTS:
-${pending} pending tasks
+Subjects below 75% (needs urgent attention): ${lowAtt.length > 0 ? lowAtt.join(", ") : "None — all good!"}
+Subjects above 75% (safe): ${goodAtt.length > 0 ? goodAtt.join(", ") : "None yet"}
 
-UPCOMING EXAMS:
-${upcoming.map(e=>`${e.subject}`).join(", ") || "None"}
+Attendance rules in India: Students need minimum 75% attendance to appear in university exams. Below 75% means the student may be detained.
 
-AI RULES:
-- Answer using the student's actual data from this context.
-- If asked what to study next, prioritize:
-  1. Upcoming exams
-  2. Low attendance subjects
-  3. Subjects with low scores
-- Create practical study plans when requested.
-- Create daily, weekly, or exam preparation schedules when requested.
-- Never invent subjects that do not exist in the student's profile.
-- Use attendance, assignments, exams, and scores to give recommendations.
+═══════════════════════════════════
+ASSIGNMENTS (${pending.length} pending, ${submitted.length} submitted)
+═══════════════════════════════════
+${pending.length > 0 ? pending.map(a => `  - ${a.title} [${a.subject}] — due ${a.due} (${daysLeft(a.due)} days left) — Status: ${a.status}`).join("\n") : "  No pending assignments."}
 
-Only use the student's actual stored data. If information is missing, say it has not been added yet. Do not assume subjects, attendance, college, semester, or academic rules.
-Be helpful, concise, and personalized. You know the student's data. Answer academic questions, help with study plans, explain concepts from the student's actual course only, and give attendance and exam advice.
+═══════════════════════════════════
+UPCOMING EXAMS (${upcoming.length} scheduled)
+═══════════════════════════════════
+${upcoming.length > 0 ? upcoming.map(e => `  - ${e.subject} [${e.type}] on ${e.date} — ${daysLeft(e.date)} days left`).join("\n") : "  No upcoming exams."}
+${past.length > 0 ? `Past exams: ${past.map(e => e.subject).join(", ")}` : ""}
 
-Never assume a course, subjects, syllabus, or academic program.
-Only use data stored in the profile, subjects, assignments, exams, and attendance.
-If subjects are empty, say "No subjects have been added yet."
-Never generate BHMS subjects unless they exist in the stored data.
+═══════════════════════════════════
+MARKS / PERFORMANCE
+═══════════════════════════════════
+${scoresSummary}
+
+═══════════════════════════════════
+YOUR BEHAVIOUR RULES
+═══════════════════════════════════
+1. ALWAYS use the student's real data above. Never invent subjects, scores, or attendance.
+2. Use the OFFICIAL SYLLABUS to give topic-level advice (e.g. "In Anatomy, focus on the upper limb chapter for your BHMS 1st year").
+3. When asked to create a study plan, use BOTH the official syllabus AND the student's current attendance/exam data.
+4. Prioritise: upcoming exams → low attendance subjects → pending assignments.
+5. If subjects are empty, say "No subjects added yet — go to Attendance tab to add them."
+6. If course is not specified, ask the student to update their profile.
+7. Keep responses concise, structured, and specific to this student's data.
+8. You can explain any academic topic from the student's course syllabus.
+9. For attendance calculations, use: attendance% = (attended/total)*100. Need 75% minimum.
+10. If a student asks how many classes they can miss, calculate: floor((attended - 0.75*total) / 0.75).
 `;
-}
+  }
 
   async function send() {
     if(!input.trim()||loading) return;
@@ -1750,19 +1788,84 @@ function Profile({profile,setProfile,userId,onLogout}) {
   const [editing,setEditing]=useState(false);
   const [form,setForm]=useState({name:profile?.name||"",college:profile?.college||"",program:profile?.program||"",semester:profile?.semester||""});
   const [loading,setLoading]=useState(false);
+  const [showPrivacy,setShowPrivacy]=useState(false);
+  const [offerSubjects,setOfferSubjects]=useState(false);
+  const [addingSubjects,setAddingSubjects]=useState(false);
 
   async function save() {
     setLoading(true);
     await supabase.from("profiles").upsert({id:userId,...form});
-    setProfile(prev=>({...prev,...form}));setEditing(false);setLoading(false);
+    // If course or year changed, offer to auto-add subjects
+    const courseChanged = form.program !== profile?.program || form.semester !== profile?.semester;
+    setProfile(prev=>({...prev,...form}));
+    setEditing(false);
+    setLoading(false);
+    if(courseChanged && form.program && form.semester) setOfferSubjects(true);
   }
 
+  async function handleAddSubjects() {
+    setAddingSubjects(true);
+    const courseCategory = Object.keys(COURSES).find(cat => Object.keys(COURSES[cat]).includes(form.program));
+    const newSubjects = courseCategory ? getCourseSubjects(courseCategory, form.program, form.semester) : [];
+    if(newSubjects.length > 0) {
+      const {data: existingSubs} = await supabase.from("subjects").select("name").eq("user_id", userId);
+      const existingNames = (existingSubs||[]).map(s=>s.name.toLowerCase());
+      const colors = ["#4FFFB0","#4FC3F7","#B39DDB","#FFB830","#FF5252","#81C784","#F48FB1","#80DEEA","#FFCC02","#FF8A65"];
+      const rows = newSubjects.filter(n=>!existingNames.includes(n.toLowerCase())).map((name,i)=>({user_id:userId,name,code:"",attended:0,total:0,color:colors[i%colors.length]}));
+      if(rows.length>0) await supabase.from("subjects").insert(rows);
+    }
+    setAddingSubjects(false);
+    setOfferSubjects(false);
+  }
+
+  if(showPrivacy) return (
+    <div style={{animation:"fadeUp 0.25s ease"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+        <button onClick={()=>setShowPrivacy(false)} style={{background:C.card,border:`1px solid ${C.border}`,color:C.muted,borderRadius:9,padding:"6px 12px",cursor:"pointer",fontFamily:F,fontSize:13}}>← Back</button>
+        <h2 style={{fontSize:16,fontWeight:700}}>Privacy Policy</h2>
+      </div>
+      <Card style={{maxWidth:600}}>
+        {[
+          {t:"1. Data We Collect",b:"StudentOS collects your email address (for authentication), and academic data you enter: name, college, program, semester, subjects, attendance records, assignments, exams, marks, and timetable entries."},
+          {t:"2. How We Use Your Data",b:"Your data is used solely to provide the StudentOS service — displaying your academic information, powering the AI assistant, and syncing across your devices. We do not sell or share your data with third parties."},
+          {t:"3. Data Storage",b:"All data is stored securely on Supabase (supabase.com), a trusted cloud database platform. Your data is associated with your account and is not accessible to other users."},
+          {t:"4. AI Assistant",b:"When you use the AI chat feature, your academic context (attendance, subjects, assignments) is sent to Groq's API to generate responses. No personally identifiable information beyond academic context is shared."},
+          {t:"5. Data Deletion",b:"You can delete your account and all associated data at any time by contacting us. Logging out does not delete your data."},
+          {t:"6. Children's Privacy",b:"StudentOS is intended for students aged 13 and above. We do not knowingly collect data from children under 13."},
+          {t:"7. Changes to This Policy",b:"We may update this Privacy Policy from time to time. Continued use of the app after changes constitutes acceptance of the updated policy."},
+          {t:"8. Contact",b:"For privacy-related questions, contact us through the StudentOS GitHub repository."},
+        ].map(s=>(
+          <div key={s.t} style={{marginBottom:18}}>
+            <div style={{fontSize:13,fontWeight:700,marginBottom:5,color:C.accentText}}>{s.t}</div>
+            <div style={{fontSize:12,color:C.muted,lineHeight:1.7}}>{s.b}</div>
+          </div>
+        ))}
+        <div style={{fontSize:11,color:C.muted,marginTop:8,paddingTop:16,borderTop:`1px solid ${C.border}`}}>Last updated: June 2026 · StudentOS v1.0</div>
+      </Card>
+    </div>
+  );
+
   return (
-    <div style={{animation:"fadeUp 0.3s ease"}}>
+    <div style={{animation:"fadeUp 0.25s ease"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
         <h2 className="page-header" style={{fontSize:16,fontWeight:700}}>My Profile</h2>
         {!editing&&<Btn onClick={()=>setEditing(true)}>Edit Profile</Btn>}
       </div>
+
+      {/* Offer to add subjects after course change */}
+      {offerSubjects&&(
+        <div style={{background:C.accentDim,border:`1px solid ${C.accent}40`,borderRadius:14,padding:16,marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+          <div>
+            <div style={{fontSize:13,fontWeight:700,color:C.accent,marginBottom:3}}>Course updated!</div>
+            <div style={{fontSize:12,color:C.muted}}>Auto-add standard subjects for {form.program} {form.semester}?</div>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <Btn onClick={handleAddSubjects} style={{padding:"7px 14px"}}>{addingSubjects?"Adding...":"Add Subjects"}</Btn>
+            <Btn onClick={()=>setOfferSubjects(false)} variant="ghost" style={{padding:"7px 12px"}}>Skip</Btn>
+          </div>
+        </div>
+      )}
+
       <Card style={{maxWidth:500}}>
         <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:24,paddingBottom:24,borderBottom:`1px solid ${C.border}`}}>
           <div style={{width:64,height:64,borderRadius:16,background:C.accentDim,border:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,fontWeight:700,color:C.accent,flexShrink:0}}>
@@ -1775,7 +1878,7 @@ function Profile({profile,setProfile,userId,onLogout}) {
         </div>
         {editing?(
           <div>
-            {[{key:"name",label:"Full Name"},{key:"college",label:"College / University"},{key:"program",label:"Program"},{key:"semester",label:"Current Semester"}].map(f=>(
+            {[{key:"name",label:"Full Name"},{key:"college",label:"College / University"},{key:"program",label:"Program / Course"},{key:"semester",label:"Current Year / Semester"}].map(f=>(
               <div key={f.key} style={{marginBottom:12}}>
                 <div style={{fontSize:11,color:C.muted,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.05em"}}>{f.label}</div>
                 <Input value={form[f.key]} onChange={e=>setForm(p=>({...p,[f.key]:e.target.value}))} style={{width:"100%"}}/>
@@ -1788,19 +1891,211 @@ function Profile({profile,setProfile,userId,onLogout}) {
           </div>
         ):(
           <div>
-            {[{label:"College",value:profile?.college},{label:"Program",value:profile?.program},{label:"Semester",value:profile?.semester}].map(f=>(
+            {[{label:"College",value:profile?.college},{label:"Program",value:profile?.program},{label:"Year / Semester",value:profile?.semester}].map(f=>(
               <div key={f.label} style={{marginBottom:16}}>
                 <div style={{fontSize:11,color:C.muted,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>{f.label}</div>
                 <div style={{fontSize:14,fontWeight:500}}>{f.value||"—"}</div>
               </div>
             ))}
             <div style={{marginTop:24,paddingTop:20,borderTop:`1px solid ${C.border}`}}>
-              <div style={{fontSize:12,color:C.muted,marginBottom:12}}>AI powered by Groq  · Data stored on Supabase</div>
+              <div style={{fontSize:12,color:C.muted,marginBottom:12}}>AI powered by Groq · Data stored on Supabase</div>
+              <button onClick={()=>setShowPrivacy(true)} style={{background:"none",border:"none",color:C.muted,fontSize:12,cursor:"pointer",fontFamily:F,textDecoration:"underline",marginBottom:12,display:"block"}}>Privacy Policy</button>
               <Btn onClick={onLogout} variant="danger" style={{width:"100%",padding:"10px 0",fontSize:13}}>Log Out</Btn>
             </div>
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+// ── Onboarding ────────────────────────────────────────────────────────────────
+function Onboarding({userId, onComplete}) {
+  const [step, setStep] = useState(1);
+  const [name, setName] = useState("");
+  const [college, setCollege] = useState("");
+  const [category, setCategory] = useState("");
+  const [course, setCourse] = useState("");
+  const [year, setYear] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const courses = category ? getCourseNames(category) : [];
+  const years = category && course ? getCourseYears(category, course) : [];
+  const subjects = category && course && year ? getCourseSubjects(category, course, year) : [];
+
+  async function finish() {
+    if (!name.trim()) { setError("Please enter your name"); return; }
+    setSaving(true);
+    // Save profile
+    await supabase.from("profiles").upsert({
+      id: userId,
+      name: name.trim(),
+      college: college.trim(),
+      program: course,
+      semester: year,
+    });
+    // Auto-add subjects if selected — skip any that already exist
+    if (subjects.length > 0) {
+      const {data: existingSubs} = await supabase.from("subjects").select("name").eq("user_id", userId);
+      const existingNames = (existingSubs || []).map(s => s.name.toLowerCase());
+      const colors = ["#4FFFB0","#4FC3F7","#B39DDB","#FFB830","#FF5252","#81C784","#F48FB1","#80DEEA","#FFCC02","#FF8A65"];
+      const rows = subjects
+        .filter(name => !existingNames.includes(name.toLowerCase()))
+        .map((name, i) => ({
+          user_id: userId,
+          name,
+          code: "",
+          attended: 0,
+          total: 0,
+          color: colors[i % colors.length],
+        }));
+      if (rows.length > 0) await supabase.from("subjects").insert(rows);
+    }
+    setSaving(false);
+    onComplete();
+  }
+
+  return (
+    <div style={{minHeight:"100vh",minHeight:"100dvh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+      <style>{GS}</style>
+      <div style={{width:"100%",maxWidth:480,animation:"fadeUp 0.3s ease"}}>
+
+        {/* Logo */}
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{width:56,height:56,background:`linear-gradient(135deg,${C.accent},#00C97A)`,borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,fontWeight:800,color:"#000",margin:"0 auto 14px",boxShadow:`0 8px 24px ${C.accent}30`}}>S</div>
+          <div style={{fontSize:22,fontWeight:800,letterSpacing:"-0.03em",marginBottom:6}}>Welcome to StudentOS</div>
+          <div style={{fontSize:13,color:C.muted}}>Let's set up your academic profile</div>
+        </div>
+
+        {/* Step indicators */}
+        <div style={{display:"flex",gap:6,marginBottom:28,justifyContent:"center"}}>
+          {[1,2,3].map(s=>(
+            <div key={s} style={{height:4,width:60,borderRadius:2,background:step>=s?C.accent:C.border,transition:"background 0.3s ease"}}/>
+          ))}
+        </div>
+
+        <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:22,padding:24}}>
+
+          {/* Step 1 — Personal Info */}
+          {step===1&&(
+            <div style={{animation:"fadeIn 0.2s ease"}}>
+              <div style={{fontSize:12,color:C.accentText,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Step 1 of 3</div>
+              <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>Personal Details</div>
+              <div style={{fontSize:13,color:C.muted,marginBottom:22}}>Tell us a bit about yourself</div>
+
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:11,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Full Name *</div>
+                <Input value={name} onChange={e=>{setName(e.target.value);setError("");}} placeholder="e.g. Aditi Sharma" style={{width:"100%"}}/>
+              </div>
+              <div style={{marginBottom:22}}>
+                <div style={{fontSize:11,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>College / University</div>
+                <Input value={college} onChange={e=>setCollege(e.target.value)} placeholder="e.g. Delhi University" style={{width:"100%"}}/>
+              </div>
+
+              {error&&<div style={{color:C.danger,fontSize:12,marginBottom:12}}>{error}</div>}
+              <Btn onClick={()=>{if(!name.trim()){setError("Please enter your name");return;}setStep(2);}} style={{width:"100%",padding:"12px 0",fontSize:14}}>Continue →</Btn>
+            </div>
+          )}
+
+          {/* Step 2 — Course Selection */}
+          {step===2&&(
+            <div style={{animation:"fadeIn 0.2s ease"}}>
+              <div style={{fontSize:12,color:C.accentText,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Step 2 of 3</div>
+              <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>Your Course</div>
+              <div style={{fontSize:13,color:C.muted,marginBottom:22}}>We'll auto-add your subjects</div>
+
+              <div style={{marginBottom:14}}>
+                <div style={{fontSize:11,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Course Category</div>
+                <select value={category} onChange={e=>{setCategory(e.target.value);setCourse("");setYear("");}}
+                  style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,color:C.text,padding:"10px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}>
+                  <option value="">— Select category —</option>
+                  {COURSE_CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              {category&&(
+                <div style={{marginBottom:14,animation:"fadeIn 0.2s ease"}}>
+                  <div style={{fontSize:11,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Course / Program</div>
+                  <select value={course} onChange={e=>{setCourse(e.target.value);setYear("");}}
+                    style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,color:C.text,padding:"10px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}>
+                    <option value="">— Select course —</option>
+                    {courses.map(c=><option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              )}
+
+              {course&&(
+                <div style={{marginBottom:22,animation:"fadeIn 0.2s ease"}}>
+                  <div style={{fontSize:11,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:6}}>Current Year / Semester</div>
+                  <select value={year} onChange={e=>setYear(e.target.value)}
+                    style={{width:"100%",background:C.surface,border:`1px solid ${C.border}`,color:C.text,padding:"10px 12px",borderRadius:10,fontSize:13,fontFamily:F,outline:"none",colorScheme:"dark"}}>
+                    <option value="">— Select year —</option>
+                    {years.map(y=><option key={y} value={y}>{y}</option>)}
+                  </select>
+                </div>
+              )}
+
+              <div style={{display:"flex",gap:8}}>
+                <Btn onClick={()=>setStep(1)} variant="ghost" style={{flex:1,padding:"11px 0"}}>← Back</Btn>
+                <Btn onClick={()=>setStep(3)} style={{flex:2,padding:"11px 0",fontSize:14}} disabled={!year&&course}>
+                  {year ? "Preview Subjects →" : "Skip & Continue →"}
+                </Btn>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3 — Preview & Confirm */}
+          {step===3&&(
+            <div style={{animation:"fadeIn 0.2s ease"}}>
+              <div style={{fontSize:12,color:C.accentText,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>Step 3 of 3</div>
+              <div style={{fontSize:18,fontWeight:700,marginBottom:4}}>Confirm & Launch</div>
+              <div style={{fontSize:13,color:C.muted,marginBottom:18}}>Review your setup before we get started</div>
+
+              {/* Summary */}
+              <div style={{background:C.surface,borderRadius:14,padding:16,marginBottom:16,border:`1px solid ${C.border}`}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                  {[{l:"Name",v:name},{l:"College",v:college||"—"},{l:"Course",v:course||"Not selected"},{l:"Year",v:year||"—"}].map(item=>(
+                    <div key={item.l}>
+                      <div style={{fontSize:10,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}}>{item.l}</div>
+                      <div style={{fontSize:13,fontWeight:500,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subjects preview */}
+              {subjects.length>0?(
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:11,color:C.muted,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>
+                    {subjects.length} subjects will be added automatically
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {subjects.map((s,i)=>(
+                      <span key={i} style={{display:"inline-flex",alignItems:"center",background:C.accentDim,border:`1px solid ${C.accent}30`,color:C.accentText,fontSize:11,fontWeight:500,padding:"4px 10px",borderRadius:20}}>{s}</span>
+                    ))}
+                  </div>
+                </div>
+              ):(
+                <div style={{marginBottom:20,padding:"14px 16px",background:C.surface,borderRadius:12,border:`1px solid ${C.border}`}}>
+                  <div style={{fontSize:13,color:C.muted}}>No course selected — you can add subjects manually from the Attendance tab.</div>
+                </div>
+              )}
+
+              <div style={{display:"flex",gap:8}}>
+                <Btn onClick={()=>setStep(2)} variant="ghost" style={{flex:1,padding:"11px 0"}}>← Back</Btn>
+                <Btn onClick={finish} style={{flex:2,padding:"11px 0",fontSize:14}} disabled={saving}>
+                  {saving?"Setting up...":"🚀 Launch StudentOS"}
+                </Btn>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={{textAlign:"center",marginTop:16,fontSize:11,color:C.muted}}>
+          You can always update your profile later in Settings
+        </div>
+      </div>
     </div>
   );
 }
@@ -1865,6 +2160,12 @@ export default function App() {
   );
 
   if(!user) return <><style>{GS}</style><Auth onAuth={loadUser}/></>;
+
+  // Show onboarding for new users who haven't set college or program yet
+  // Show onboarding if: no college, no program, OR name looks auto-generated (contains @ or is the email prefix)
+  const nameIsAutoGenerated = !profile?.name || profile.name.includes("@") || profile.name === user.email?.split("@")[0];
+  const needsOnboarding = nameIsAutoGenerated || (!profile?.college && !profile?.program);
+  if(needsOnboarding) return <Onboarding userId={user.id} onComplete={()=>loadUser(user)}/>;
 
   const views={
     dashboard:<Dashboard subjects={subjects} assignments={assignments} exams={exams} scores={scores} profile={profile} onNav={setPage}/>,
