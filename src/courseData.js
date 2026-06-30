@@ -614,3 +614,404 @@ export function getCourseYears(category, courseName) {
 export function getCourseSubjects(category, courseName, year) {
   return COURSES[category]?.[courseName]?.subjects?.[year] || [];
 }
+
+// ── Topic Database (Batch 1 — one course per category, all years) ─────────────
+// Format: TOPICS[courseName][year][subjectName] = [topic1, topic2, ...]
+export const TOPICS = {
+  "BHMS": {
+    "1st Year": {
+      "Anatomy": ["Osteology - Upper Limb","Osteology - Lower Limb","Myology - Upper Limb","Myology - Lower Limb","Thorax & Abdomen","Head & Neck","Neuroanatomy Basics"],
+      "Physiology": ["Cell Physiology","Blood & Body Fluids","Cardiovascular System","Respiratory System","Renal Physiology","Nervous System","Endocrine System"],
+      "Biochemistry": ["Carbohydrate Metabolism","Protein Metabolism","Lipid Metabolism","Enzymes","Vitamins & Minerals","Nucleic Acids","Acid-Base Balance"],
+      "Organon of Medicine": ["Aphorisms 1-10","Aphorisms 11-30","Vital Force Concept","Disease Theory","Drug Proving","Case Taking Method","Miasms Introduction"],
+      "Homoeopathic Pharmacy": ["Sources of Drugs","Methods of Potentisation","Dosage Forms","Drug Storage","Mother Tinctures","Triturations","Drug Strength Calculation"],
+      "Homoeopathic Materia Medica": ["Aconitum Napellus","Belladonna","Bryonia Alba","Nux Vomica","Pulsatilla","Rhus Toxicodendron","Sulphur"],
+    },
+    "2nd Year": {
+      "Pathology & Microbiology": ["Cell Injury & Adaptation","Inflammation & Repair","Neoplasia","Bacteriology Basics","Virology Basics","Immunology","Systemic Pathology"],
+      "Forensic Medicine & Toxicology": ["Medical Jurisprudence","Identification & Age Estimation","Asphyxial Deaths","Injuries & Wounds","Common Poisons","Medicolegal Autopsy","Sexual Offences"],
+      "Organon of Medicine": ["Chronic Disease Theory","Susceptibility","Drug Selection","Posology","Second Prescription","Antidotes","Obstacles to Cure"],
+      "Homoeopathic Materia Medica": ["Calcarea Carbonica","Lycopodium","Natrum Muriaticum","Phosphorus","Sepia","Arsenicum Album","Silicea"],
+      "Community Medicine": ["Epidemiology Basics","Communicable Diseases","Maternal & Child Health","Nutrition","Environmental Health","Health Education","National Health Programs"],
+    },
+    "3rd Year": {
+      "Practice of Medicine": ["Fever","Respiratory Disorders","Cardiovascular Disorders","GI Disorders","Renal Disorders","CNS Disorders","Endocrine Disorders"],
+      "Surgery": ["Wound Healing","Surgical Infections","Fractures & Dislocations","Tumours","Burns Management","Pre/Post-op Care","Shock"],
+      "Obstetrics & Gynaecology": ["Antenatal Care","Normal Labour","Postnatal Care","Menstrual Disorders","Infertility","Fibroid Uterus","Pelvic Infections"],
+      "Organon of Medicine": ["Aggravation & Amelioration","Direction of Cure","Repertorisation Basics","Single Remedy Principle","Minimum Dose","Suppressions","Case Analysis"],
+      "Homoeopathic Materia Medica": ["Mercurius","Carbo Veg","Ignatia","Causticum","Kali Carbonicum","Argentum Nitricum","China"],
+      "ENT & Ophthalmology": ["Ear Disorders","Nose & Sinus Disorders","Throat Disorders","Eye Refractive Errors","Conjunctivitis","Cataract Basics","Glaucoma Basics"],
+    },
+    "Final Year": {
+      "Practice of Medicine": ["Diabetes Mellitus","Hypertension","Tuberculosis","Liver Disorders","Anaemia","Arthritis","Skin Disorders"],
+      "Surgery": ["Acute Abdomen","Hernia","Urological Disorders","Vascular Disorders","Orthopaedic Trauma","Oncosurgery Basics","Anaesthesia Basics"],
+      "Obstetrics & Gynaecology": ["High Risk Pregnancy","Obstetric Emergencies","Contraception","Menopause","Ovarian Tumours","PCOS","Gynaecological Surgery Basics"],
+      "Organon of Medicine": ["Vital Force in Disease","Theory of Chronic Miasms","Psora Detail","Sycosis Detail","Syphilis Detail","Case Management","Follow-up Principles"],
+      "Homoeopathic Materia Medica": ["Thuja Occidentalis","Medorrhinum","Tuberculinum","Psorinum","Lachesis","Apis Mellifica","Hepar Sulphuris"],
+      "Paediatrics": ["Growth & Development","Neonatal Care","Common Childhood Illnesses","Immunization Schedule","Nutritional Disorders","Congenital Anomalies","Paediatric Emergencies"],
+      "Community Medicine": ["Health Planning in India","Demography","Disaster Management","Occupational Health","School Health","Family Welfare Programs","Biostatistics Basics"],
+    },
+  },
+
+  "B.Tech / B.E. Computer Science": {
+    "1st Year": {
+      "Engineering Mathematics I": ["Matrices & Determinants","Differential Calculus","Integral Calculus","Vector Calculus","Differential Equations"],
+      "Engineering Physics": ["Wave Optics","Quantum Mechanics Basics","Laser & Fiber Optics","Semiconductor Physics","Crystal Structures"],
+      "Engineering Chemistry": ["Water Chemistry","Polymers","Fuels & Combustion","Corrosion","Spectroscopy Basics"],
+      "Basic Electrical Engineering": ["DC Circuits","AC Fundamentals","Electrical Machines Basics","Measuring Instruments","Safety & Earthing"],
+      "Engineering Graphics": ["Orthographic Projections","Isometric Views","Sectional Views","Dimensioning","CAD Basics"],
+      "Programming in C": ["Variables & Data Types","Control Structures","Functions","Arrays & Strings","Pointers","File Handling"],
+    },
+    "2nd Year": {
+      "Data Structures": ["Arrays & Linked Lists","Stacks & Queues","Trees & BSTs","Graphs","Sorting Algorithms","Hashing"],
+      "Discrete Mathematics": ["Set Theory","Relations & Functions","Propositional Logic","Graph Theory","Combinatorics"],
+      "Digital Electronics": ["Boolean Algebra","Logic Gates","Combinational Circuits","Sequential Circuits","Counters & Registers"],
+      "Computer Organization & Architecture": ["CPU Architecture","Memory Hierarchy","Instruction Sets","Pipelining","I/O Organization"],
+      "Object Oriented Programming": ["Classes & Objects","Inheritance","Polymorphism","Encapsulation","Exception Handling"],
+      "Database Management Systems": ["ER Modeling","Relational Model","SQL Basics","Normalization","Transactions & Concurrency"],
+    },
+    "3rd Year": {
+      "Operating Systems": ["Process Management","CPU Scheduling","Memory Management","Deadlocks","File Systems"],
+      "Computer Networks": ["OSI & TCP/IP Model","Routing Algorithms","Network Security Basics","Application Layer Protocols","Wireless Networks"],
+      "Algorithm Design & Analysis": ["Greedy Algorithms","Dynamic Programming","Divide & Conquer","Backtracking","NP-Completeness"],
+      "Software Engineering": ["SDLC Models","Requirements Engineering","Software Design","Testing Strategies","Project Management"],
+      "Web Technologies": ["HTML/CSS Basics","JavaScript Fundamentals","Backend Frameworks","REST APIs","Web Security Basics"],
+      "Theory of Computation": ["Finite Automata","Regular Languages","Context-Free Grammars","Pushdown Automata","Turing Machines"],
+    },
+    "4th Year": {
+      "Machine Learning": ["Supervised Learning","Unsupervised Learning","Neural Networks Basics","Model Evaluation","Feature Engineering"],
+      "Cloud Computing": ["Cloud Service Models","Virtualization","Cloud Storage","Containerization Basics","Cloud Security"],
+      "Information Security": ["Cryptography Basics","Network Security","Web Application Security","Security Protocols","Ethical Hacking Basics"],
+      "Compiler Design": ["Lexical Analysis","Syntax Analysis","Semantic Analysis","Code Generation","Code Optimization"],
+      "Project Work": ["Problem Identification","Literature Review","System Design","Implementation","Testing & Documentation"],
+    },
+  },
+
+  "BBA": {
+    "1st Year": {
+      "Principles of Management": ["Management Functions","Planning & Decision Making","Organizing","Leadership Theories","Controlling"],
+      "Business Economics": ["Demand & Supply","Market Structures","National Income","Inflation","Fiscal Policy"],
+      "Financial Accounting": ["Accounting Principles","Journal & Ledger","Trial Balance","Financial Statements","Depreciation"],
+      "Business Communication": ["Verbal Communication","Written Communication","Business Letters","Presentation Skills","Negotiation"],
+      "Business Mathematics": ["Ratios & Proportions","Interest Calculations","Matrices Basics","Linear Equations","Statistics Basics"],
+    },
+    "2nd Year": {
+      "Marketing Management": ["Marketing Mix","Consumer Behaviour","Market Segmentation","Branding","Digital Marketing Basics"],
+      "Human Resource Management": ["Recruitment & Selection","Training & Development","Performance Appraisal","Compensation","Employee Relations"],
+      "Financial Management": ["Capital Budgeting","Working Capital Management","Cost of Capital","Dividend Policy","Financial Ratios"],
+      "Operations Management": ["Production Planning","Inventory Management","Quality Control","Supply Chain Basics","Process Design"],
+      "Business Law": ["Contract Law","Sale of Goods Act","Company Law Basics","Consumer Protection","Negotiable Instruments"],
+      "Organisational Behaviour": ["Individual Behaviour","Group Dynamics","Motivation Theories","Organizational Culture","Conflict Management"],
+    },
+    "3rd Year": {
+      "Strategic Management": ["Strategy Formulation","SWOT Analysis","Competitive Strategy","Strategy Implementation","Strategic Control"],
+      "Entrepreneurship Development": ["Idea Generation","Business Plan Writing","Funding Sources","Startup Challenges","Scaling a Business"],
+      "International Business": ["Globalization","Trade Theories","Foreign Exchange","Export-Import Procedures","International Marketing"],
+      "Project Management": ["Project Planning","Scheduling Techniques","Risk Management","Resource Allocation","Project Closure"],
+      "Business Ethics": ["Ethical Theories","Corporate Governance","CSR","Ethical Dilemmas","Sustainability"],
+      "Research Methodology": ["Research Design","Data Collection","Sampling Methods","Data Analysis","Report Writing"],
+    },
+  },
+
+  "BCA": {
+    "1st Year": {
+      "Programming in C": ["Basics of C","Control Statements","Functions","Arrays","Pointers","Structures"],
+      "Mathematics I": ["Algebra","Trigonometry","Calculus Basics","Matrices","Probability Basics"],
+      "Digital Electronics": ["Number Systems","Logic Gates","Boolean Algebra","Combinational Circuits","Flip-Flops"],
+      "PC Software & Office Automation": ["Word Processing","Spreadsheets","Presentations","Database Basics","Internet Basics"],
+      "Communication Skills": ["Grammar Basics","Listening Skills","Speaking Skills","Group Discussion","Report Writing"],
+    },
+    "2nd Year": {
+      "Data Structures": ["Arrays & Lists","Stacks & Queues","Linked Lists","Trees","Sorting & Searching"],
+      "Database Management Systems": ["ER Diagrams","SQL Queries","Normalization","Joins","Transactions"],
+      "OOP with C++": ["Classes & Objects","Constructors & Destructors","Inheritance","Polymorphism","Operator Overloading"],
+      "Operating Systems": ["Process Scheduling","Memory Management","File Systems","Deadlocks","Threads"],
+      "Discrete Mathematics": ["Set Theory","Logic","Relations","Graph Theory Basics","Combinatorics Basics"],
+      "Computer Networks": ["Network Topologies","OSI Model","TCP/IP","Routing Basics","Network Security Basics"],
+    },
+    "3rd Year": {
+      "Software Engineering": ["SDLC","Requirements Analysis","Design Concepts","Testing","Maintenance"],
+      "Web Technologies": ["HTML & CSS","JavaScript","PHP Basics","Web Servers","Web Security Basics"],
+      "Java Programming": ["Java Basics","OOP in Java","Exception Handling","Collections","Multithreading"],
+      "Computer Graphics & Multimedia": ["Graphics Primitives","Transformations","2D/3D Concepts","Animation Basics","Multimedia Tools"],
+      "Project Work": ["Requirement Gathering","System Design","Coding","Testing","Documentation"],
+    },
+  },
+
+  "B.Com": {
+    "1st Year": {
+      "Financial Accounting": ["Accounting Concepts","Journal Entries","Ledger Posting","Trial Balance","Final Accounts"],
+      "Business Economics": ["Demand Analysis","Supply Analysis","Market Equilibrium","Cost Concepts","Revenue Concepts"],
+      "Business Mathematics & Statistics": ["Ratios & Percentages","Simple & Compound Interest","Measures of Central Tendency","Correlation","Index Numbers"],
+      "Business Communication": ["Business Letters","Report Writing","Presentation Skills","Listening Skills","Interview Skills"],
+      "Business Law": ["Indian Contract Act","Sale of Goods Act","Partnership Act","Negotiable Instruments Act","Consumer Protection Act"],
+    },
+    "2nd Year": {
+      "Corporate Accounting": ["Share Capital","Debentures","Final Accounts of Companies","Amalgamation","Internal Reconstruction"],
+      "Cost Accounting": ["Cost Concepts","Material Costing","Labour Costing","Overheads","Cost Sheets"],
+      "Income Tax Law & Practice": ["Residential Status","Income from Salary","Income from House Property","Deductions","Tax Computation"],
+      "Company Law": ["Formation of Company","Memorandum & Articles","Share Capital Provisions","Directors","Winding Up"],
+      "Banking Theory & Practice": ["Banking System in India","Types of Accounts","Negotiable Instruments","RBI Functions","Digital Banking"],
+    },
+    "3rd Year": {
+      "Advanced Accounting": ["Branch Accounting","Departmental Accounts","Hire Purchase","Insurance Claims","Partnership Accounts"],
+      "Auditing & Assurance": ["Audit Process","Internal Control","Vouching","Verification","Audit Report"],
+      "Financial Management": ["Capital Budgeting","Cost of Capital","Working Capital","Dividend Decisions","Leverage Analysis"],
+      "Management Accounting": ["Budgetary Control","Standard Costing","Marginal Costing","Ratio Analysis","Fund Flow Statement"],
+      "Entrepreneurship Development": ["Entrepreneurial Traits","Business Plan","Funding Options","MSME Schemes","Case Studies"],
+    },
+  },
+
+  "BA English": {
+    "1st Year": {
+      "British Literature I": ["Chaucer's Works","Shakespeare's Sonnets","Metaphysical Poetry","Restoration Drama","18th Century Novel"],
+      "Indian Writing in English I": ["Raja Rao","R.K. Narayan","Kamala Das","Nissim Ezekiel","A.K. Ramanujan"],
+      "Linguistics": ["Phonetics","Morphology","Syntax Basics","Semantics","Sociolinguistics Basics"],
+      "Communication Skills": ["Listening Skills","Speaking Skills","Reading Comprehension","Writing Skills","Presentation Skills"],
+      "History I": ["Ancient Civilizations","Medieval History Basics","Renaissance","Reformation","Age of Exploration"],
+    },
+    "2nd Year": {
+      "British Literature II": ["Romantic Poetry","Victorian Novel","Modernist Poetry","Bloomsbury Group","War Poets"],
+      "American Literature": ["Transcendentalism","Mark Twain","Walt Whitman","Modern American Drama","Harlem Renaissance"],
+      "Literary Theory & Criticism": ["Formalism","Structuralism","Marxist Criticism","Feminist Criticism","Postcolonial Theory"],
+      "Drama": ["Greek Tragedy","Shakespearean Drama","Absurd Theatre","Modern Indian Drama","Contemporary Drama"],
+      "Indian Writing in English II": ["Salman Rushdie","Arundhati Roy","Vikram Seth","Jhumpa Lahiri","Amitav Ghosh"],
+    },
+    "3rd Year": {
+      "Postcolonial Literature": ["Concepts of Postcolonialism","African Literature","Caribbean Literature","Indian Postcolonial Fiction","Diaspora Writing"],
+      "Modern Literature": ["Stream of Consciousness","Existentialism in Literature","Modernist Techniques","Postmodern Fiction","Magical Realism"],
+      "Research Methodology": ["Research Design","Literature Review","Citation Styles","Thesis Writing","Plagiarism Awareness"],
+      "Dissertation / Project": ["Topic Selection","Literature Survey","Draft Writing","Revision","Final Submission"],
+    },
+  },
+
+  "B.Pharm": {
+    "1st Year": {
+      "Pharmaceutics I": ["Pharmaceutical Calculations","Powders & Granules","Tablets Basics","Capsules","Liquid Dosage Forms"],
+      "Pharmaceutical Chemistry I": ["Atomic Structure","Periodic Table","Acids & Bases","Chemical Bonding","Inorganic Reactions"],
+      "Pharmacognosy I": ["Plant Classification","Cell Structure","Crude Drugs Introduction","Carbohydrates","Glycosides"],
+      "Human Anatomy & Physiology": ["Cell Structure","Skeletal System","Muscular System","Cardiovascular System","Respiratory System"],
+      "Remedial Mathematics": ["Algebra Basics","Trigonometry","Differentiation","Integration","Statistics Basics"],
+    },
+    "2nd Year": {
+      "Pharmaceutics II": ["Suspensions","Emulsions","Ointments & Creams","Suppositories","Sterile Products Basics"],
+      "Pharmaceutical Chemistry II": ["Organic Reactions","Stereochemistry","Aromatic Compounds","Heterocyclic Chemistry","Drug Synthesis Basics"],
+      "Pharmacognosy II": ["Alkaloids","Tannins","Volatile Oils","Resins","Lipids"],
+      "Pathophysiology": ["Inflammation","Fever","Diabetes Basics","Hypertension Basics","Cancer Basics"],
+      "Environmental Sciences": ["Ecosystems","Biodiversity","Pollution Types","Environmental Laws","Sustainable Development"],
+    },
+    "3rd Year": {
+      "Pharmaceutics III": ["Tablet Coating","Controlled Release Systems","Packaging","Stability Testing","GMP Basics"],
+      "Pharmaceutical Chemistry III": ["Drug Design Basics","Structure Activity Relationship","Medicinal Chemistry of Analgesics","Antibiotics Chemistry","Antihypertensives"],
+      "Pharmacology I": ["Pharmacokinetics","Pharmacodynamics","Autonomic Nervous System Drugs","CNS Drugs Basics","Cardiovascular Drugs"],
+      "Pharmacognosy III": ["Enzymes","Vitamins","Marine Drugs","Herbal Drug Technology","Quality Control of Herbals"],
+      "Pharmaceutical Jurisprudence": ["Drugs & Cosmetics Act","Pharmacy Act","Narcotic Drugs Act","Medical Termination of Pregnancy Act","Consumer Protection Act"],
+      "Industrial Pharmacy I": ["Tablet Manufacturing","Capsule Manufacturing","Quality Assurance","Validation Basics","Scale-up Techniques"],
+    },
+    "4th Year": {
+      "Novel Drug Delivery Systems": ["Liposomes","Nanoparticles","Transdermal Systems","Targeted Drug Delivery","Implants"],
+      "Pharmacology II": ["Chemotherapy Basics","Antimicrobials","Antivirals","Anticancer Drugs","Immunopharmacology"],
+      "Pharmacognosy IV": ["Biotechnology in Pharmacognosy","Plant Tissue Culture","Standardization of Herbals","Nutraceuticals","Cosmeceuticals"],
+      "Biopharmaceutics & Pharmacokinetics": ["Drug Absorption","Drug Distribution","Bioavailability","Compartment Models","Drug Interactions"],
+      "Pharmaceutical Biotechnology": ["rDNA Technology","Monoclonal Antibodies","Vaccines","Gene Therapy Basics","Biosimilars"],
+      "Hospital & Clinical Pharmacy": ["Hospital Pharmacy Organization","Drug Distribution Systems","Patient Counselling","Adverse Drug Reactions","Therapeutic Drug Monitoring"],
+      "Biostatistics & Research Methodology": ["Data Types","Hypothesis Testing","Clinical Trial Design","Research Ethics","Report Writing"],
+    },
+  },
+
+  "B.Sc Nursing": {
+    "1st Year": {
+      "Anatomy": ["Skeletal System","Muscular System","Cardiovascular System","Nervous System","Digestive System"],
+      "Physiology": ["Cell Physiology","Blood Physiology","Respiratory Physiology","Renal Physiology","Endocrine Physiology"],
+      "Nutrition & Biochemistry": ["Macronutrients","Micronutrients","Balanced Diet","Therapeutic Diets","Metabolism Basics"],
+      "Nursing Foundations": ["Nursing Process","Vital Signs","Personal Hygiene","Bed Making","Infection Control"],
+      "Psychology": ["Personality Theories","Learning Theories","Stress & Coping","Defense Mechanisms","Developmental Psychology Basics"],
+    },
+    "2nd Year": {
+      "Medical-Surgical Nursing I": ["Pre/Post-operative Care","Wound Care","Respiratory Disorders Nursing","Cardiac Disorders Nursing","Pain Management"],
+      "Pharmacology": ["Drug Administration Routes","Antibiotics","Analgesics","Cardiovascular Drugs","Drug Calculation"],
+      "Pathology & Genetics": ["Cell Injury","Inflammation","Neoplasia","Genetic Disorders Basics","Hereditary Patterns"],
+      "Community Health Nursing I": ["Primary Health Care","Health Promotion","Epidemiology Basics","Family Health Care","School Health"],
+      "Communication & Educational Technology": ["Therapeutic Communication","Patient Education","Teaching Methods","AV Aids","Health Education Materials"],
+    },
+    "3rd Year": {
+      "Medical-Surgical Nursing II": ["Neurological Disorders Nursing","Renal Disorders Nursing","Endocrine Disorders Nursing","Oncology Nursing","Critical Care Basics"],
+      "Child Health Nursing": ["Growth & Development","Neonatal Care","Common Childhood Illnesses","Immunization","Paediatric Emergencies"],
+      "Mental Health Nursing": ["Mental Status Examination","Anxiety Disorders","Mood Disorders","Schizophrenia","Therapeutic Milieu"],
+      "Midwifery & Obstetric Nursing": ["Antenatal Care","Normal Labour","Postnatal Care","High Risk Pregnancy","Family Planning"],
+    },
+    "4th Year": {
+      "Midwifery & Obstetric Nursing": ["Obstetric Emergencies","Newborn Resuscitation","Lactation Management","Infertility Basics","Menopause Care"],
+      "Community Health Nursing II": ["National Health Programs","Disaster Nursing","Occupational Health Nursing","Environmental Health","Health Care Delivery System"],
+      "Management of Nursing Services & Education": ["Nursing Administration","Staffing","Quality Assurance","Curriculum Development","Clinical Teaching"],
+      "Research & Statistics in Nursing": ["Research Process","Sampling Techniques","Data Analysis Basics","Evidence Based Practice","Report Writing"],
+    },
+  },
+
+  "LLB (3 Year)": {
+    "1st Year": {
+      "Constitutional Law I": ["Preamble & Basic Structure","Fundamental Rights","Directive Principles","Union Executive","Parliament"],
+      "Law of Contracts I": ["Offer & Acceptance","Consideration","Capacity to Contract","Free Consent","Void Agreements"],
+      "Family Law I": ["Hindu Marriage Act","Hindu Succession Act","Muslim Personal Law Basics","Adoption Laws","Maintenance Laws"],
+      "Law of Torts & Consumer Protection": ["General Defences","Negligence","Defamation","Strict Liability","Consumer Protection Act Basics"],
+      "Legal Methods & Research": ["Sources of Law","Legal Research Techniques","Citation Methods","Case Briefing","Legal Writing"],
+    },
+    "2nd Year": {
+      "Constitutional Law II": ["State Executive","Judiciary","Emergency Provisions","Amendment Procedure","Centre-State Relations"],
+      "Law of Contracts II": ["Indemnity & Guarantee","Bailment & Pledge","Agency","Sale of Goods","Partnership Basics"],
+      "Criminal Law I": ["General Principles of IPC","Offences Against Body","Offences Against Property","Criminal Conspiracy","Abetment"],
+      "Administrative Law": ["Delegated Legislation","Natural Justice","Judicial Review","Administrative Tribunals","Right to Information"],
+      "Company Law": ["Incorporation","Memorandum & Articles","Share Capital","Directors' Duties","Winding Up Basics"],
+      "Environmental Law": ["Environment Protection Act","Water Pollution Act","Air Pollution Act","Forest Conservation","Public Interest Litigation"],
+    },
+    "3rd Year": {
+      "Criminal Law II": ["Offences Against State","Offences Against Public Tranquility","Sexual Offences","Defamation under IPC","Punishments under IPC"],
+      "Civil Procedure Code": ["Jurisdiction of Courts","Pleadings","Suits","Execution of Decrees","Appeals & Revisions"],
+      "Criminal Procedure Code": ["Arrest","Investigation","Charge","Trial Procedures","Bail Provisions"],
+      "Law of Evidence": ["Relevancy of Facts","Burden of Proof","Witnesses","Documentary Evidence","Presumptions"],
+      "Arbitration & ADR": ["Arbitration Agreement","Arbitral Tribunal","Conciliation","Mediation","Enforcement of Awards"],
+      "Moot Court & Trial Advocacy": ["Drafting Pleadings","Oral Advocacy Skills","Cross Examination Techniques","Case Analysis","Court Etiquette"],
+    },
+  },
+
+  "B.Ed": {
+    "1st Year": {
+      "Childhood & Growing Up": ["Stages of Development","Cognitive Development","Socio-Emotional Development","Adolescence","Individual Differences"],
+      "Contemporary India & Education": ["Indian Constitution & Education","Equality & Education","RTE Act","Education Policies","Diversity in Classroom"],
+      "Learning & Teaching": ["Learning Theories","Motivation in Learning","Teaching Methods","Classroom Management","Assessment Basics"],
+      "Language Across the Curriculum": ["Language Acquisition","Multilingualism","Reading & Writing Skills","Language Across Subjects","Communication in Classroom"],
+      "Understanding Disciplines & Subjects": ["Nature of Disciplines","Curriculum Organization","Subject Pedagogy Basics","Interdisciplinary Approach","Knowledge Construction"],
+      "Pedagogy of School Subject I": ["Subject Content Analysis","Lesson Planning","Teaching Aids","Subject-specific Methods","Evaluation Techniques"],
+    },
+    "2nd Year": {
+      "Knowledge & Curriculum": ["Philosophical Bases of Curriculum","Curriculum Development Process","Curriculum Evaluation","Hidden Curriculum","Curriculum Reforms"],
+      "Assessment for Learning": ["Formative Assessment","Summative Assessment","Test Construction","Grading Systems","Continuous Comprehensive Evaluation"],
+      "Creating Inclusive School": ["Inclusive Education Concept","Children with Special Needs","Gender Sensitivity","Adaptive Teaching","Barrier-free Environment"],
+      "Drama & Art in Education": ["Role of Drama in Learning","Creative Expression","Art Integration","Theatre Techniques","Aesthetic Development"],
+      "Critical Understanding of ICT": ["ICT Tools in Education","Digital Pedagogy","E-content Development","Online Assessment Tools","Digital Citizenship"],
+      "Pedagogy of School Subject II": ["Advanced Subject Pedagogy","Unit Planning","Resource Development","Peer Teaching","Reflective Practice"],
+      "School Internship": ["Lesson Observation","Practice Teaching","Classroom Management Practice","Feedback & Reflection","Portfolio Development"],
+    },
+  },
+
+  "B.Sc Agriculture": {
+    "1st Year": {
+      "Fundamentals of Agronomy": ["Soil-Plant-Water Relationship","Cropping Systems","Tillage Practices","Weed Management","Crop Growth Stages"],
+      "Agricultural Botany": ["Plant Morphology","Plant Anatomy","Plant Taxonomy Basics","Plant Reproduction","Cell Biology Basics"],
+      "Agricultural Physics": ["Soil Physical Properties","Soil Water Movement","Climate & Weather Basics","Solar Radiation","Evapotranspiration"],
+      "Agricultural Chemistry": ["Soil Chemistry Basics","Plant Nutrients","Fertilizers","Soil pH & EC","Organic Matter in Soil"],
+      "Soil Science": ["Soil Formation","Soil Classification","Soil Fertility","Soil Erosion","Soil Testing"],
+      "Introduction to Agricultural Economics": ["Demand & Supply in Agriculture","Farm Management Basics","Agricultural Marketing","Agricultural Policy","Cost of Production"],
+    },
+    "2nd Year": {
+      "Crop Production": ["Cereal Crops","Pulse Crops","Oilseed Crops","Cash Crops","Crop Rotation"],
+      "Agricultural Entomology": ["Insect Morphology","Pest Classification","Integrated Pest Management","Beneficial Insects","Pesticide Application"],
+      "Plant Pathology": ["Disease Cycle","Fungal Diseases","Bacterial Diseases","Viral Diseases","Disease Management"],
+      "Agricultural Microbiology": ["Soil Microorganisms","Nitrogen Fixation","Biofertilizers","Composting","Biocontrol Agents"],
+      "Genetics & Plant Breeding": ["Mendelian Genetics","Plant Breeding Methods","Hybridization","Mutation Breeding","Variety Development"],
+      "Farm Machinery & Power": ["Tillage Equipment","Sowing Equipment","Irrigation Equipment","Harvesting Equipment","Tractor Basics"],
+    },
+    "3rd Year": {
+      "Agronomy of Field Crops": ["Wheat Cultivation","Rice Cultivation","Sugarcane Cultivation","Cotton Cultivation","Maize Cultivation"],
+      "Horticulture": ["Fruit Production","Vegetable Production","Floriculture Basics","Landscaping Basics","Post-harvest Horticulture"],
+      "Agricultural Extension": ["Extension Methods","Communication in Extension","Adoption of Innovation","Rural Development Programs","Extension Education Theories"],
+      "Irrigation & Drainage": ["Irrigation Methods","Water Requirement of Crops","Drainage Systems","Micro-irrigation","Water Use Efficiency"],
+      "Post Harvest Technology": ["Harvesting Techniques","Storage Methods","Processing Basics","Packaging","Value Addition"],
+      "Agricultural Meteorology": ["Weather Parameters","Climate Change Impact","Crop-Weather Relationship","Weather Forecasting","Agro-climatic Zones"],
+    },
+    "4th Year": {
+      "Farming Systems": ["Integrated Farming Systems","Mixed Farming","Crop-Livestock Integration","Sustainable Farming","Farm Planning"],
+      "Organic Farming": ["Organic Farming Principles","Composting Methods","Biopesticides","Organic Certification","Organic Crop Management"],
+      "Seed Technology": ["Seed Production","Seed Quality Testing","Seed Certification","Seed Storage","Seed Processing"],
+      "Agricultural Marketing": ["Marketing Channels","Price Determination","Market Information Systems","Agricultural Trade","Export-Import in Agriculture"],
+      "Entrepreneurship Development": ["Agri-business Planning","Funding for Agri-startups","Value Chain Development","Risk Management","Case Studies"],
+      "Research Methodology & Project": ["Research Design","Field Experimentation","Data Analysis","Report Writing","Project Presentation"],
+    },
+  },
+
+  "B.Arch": {
+    "1st Year": {
+      "Architectural Design I": ["Design Fundamentals","Space Planning Basics","Form & Function","Scale & Proportion","Basic Design Exercises"],
+      "Building Construction I": ["Foundation Types","Brick Masonry","Stone Masonry","Doors & Windows","Roofing Basics"],
+      "Theory of Architecture": ["Elements of Architecture","Principles of Design","Architectural Vocabulary","Spatial Concepts","Aesthetics Basics"],
+      "History of Architecture I": ["Ancient Egyptian Architecture","Greek Architecture","Roman Architecture","Indian Temple Architecture","Mughal Architecture"],
+      "Graphics & Visual Arts": ["Freehand Drawing","Perspective Drawing","Rendering Techniques","Color Theory","Composition"],
+    },
+    "2nd Year": {
+      "Architectural Design II": ["Residential Design","Site Planning","Circulation Design","Climate Responsive Design","Material Selection"],
+      "Building Construction II": ["RCC Construction Basics","Steel Construction Basics","Staircases","Damp Proofing","Flooring Systems"],
+      "History of Architecture II": ["Gothic Architecture","Renaissance Architecture","Colonial Architecture in India","Art Nouveau","Modern Movement Origins"],
+      "Climatology & Building Science": ["Solar Geometry","Thermal Comfort","Ventilation Principles","Acoustics Basics","Daylighting"],
+      "Structural Systems I": ["Loads on Structures","Beams & Columns","Trusses","Load Path Concepts","Structural Materials"],
+    },
+    "3rd Year": {
+      "Architectural Design III": ["Institutional Building Design","Multi-storey Design","Circulation Systems","Accessibility Design","Sustainable Design Basics"],
+      "Building Construction III": ["Pre-fabrication","Curtain Walls","Advanced Roofing Systems","Sound Insulation","Fire Safety Systems"],
+      "Urban Design": ["Urban Morphology","Public Spaces","Urban Form Theories","Streetscape Design","Urban Renewal"],
+      "Interior Architecture": ["Space Planning for Interiors","Furniture Design Basics","Lighting Design","Material & Finishes","Interior Detailing"],
+      "Structural Systems II": ["Frame Structures","Shell Structures","Space Frames","Earthquake Resistant Design Basics","Foundation Design Basics"],
+    },
+    "4th Year": {
+      "Architectural Design IV": ["Large Scale Complex Design","Mixed-use Development","Healthcare Facility Design","Educational Facility Design","High-rise Design Basics"],
+      "Professional Practice": ["Architect's Role & Responsibilities","Contracts & Tendering","Building Bye-laws","Professional Ethics","Project Management Basics"],
+      "Landscape Architecture": ["Site Analysis","Planting Design","Hardscape Elements","Water Features","Landscape Sustainability"],
+      "Urban Planning": ["Master Planning","Zoning Regulations","Transportation Planning","Land Use Planning","Smart Cities Concepts"],
+    },
+    "5th Year": {
+      "Thesis / Dissertation": ["Topic Selection & Research","Site Analysis","Concept Development","Design Development","Final Presentation"],
+      "Professional Practice II": ["Construction Contracts","Cost Estimation","Project Scheduling","Quality Control","Dispute Resolution"],
+      "Architectural Criticism": ["Critical Theory in Architecture","Case Study Analysis","Architectural Journalism","Contemporary Debates","Writing about Architecture"],
+    },
+  },
+
+  "BHM (Bachelor of Hotel Management)": {
+    "1st Year": {
+      "Food Production I": ["Kitchen Basics","Knife Skills","Stocks & Sauces","Vegetable Cookery","Egg Cookery"],
+      "Food & Beverage Service I": ["F&B Service Equipment","Types of Service","Order Taking","Menu Basics","Beverage Basics"],
+      "Front Office Operations I": ["Reservation Process","Check-in/Check-out","Guest Relations","Front Office Equipment","Telephone Etiquette"],
+      "Housekeeping I": ["Housekeeping Organization","Cleaning Equipment","Room Layouts","Guest Room Cleaning","Public Area Cleaning"],
+      "Hotel Engineering": ["HVAC Basics","Electrical Systems Basics","Plumbing Basics","Fire Safety Systems","Energy Conservation"],
+      "Communication Skills": ["Guest Communication","Telephone Skills","Email Etiquette","Cross-cultural Communication","Conflict Resolution"],
+    },
+    "2nd Year": {
+      "Food Production II": ["Indian Cuisine Basics","Bakery & Confectionery","Larder Work","Soups","Sandwiches"],
+      "Food & Beverage Service II": ["Wine & Spirits Basics","Cocktails","Banquet Service","Room Service","Specialized Service Styles"],
+      "Front Office Operations II": ["Night Audit","Revenue Management Basics","Guest Complaint Handling","Group Reservations","Front Office Reports"],
+      "Housekeeping II": ["Linen Management","Laundry Operations","Pest Control","Interior Decoration Basics","Horticulture Basics"],
+      "Nutrition & Food Science": ["Macronutrients","Micronutrients","Food Spoilage","Food Safety","Menu Planning for Nutrition"],
+      "Accountancy": ["Hotel Accounting Basics","Cost Control","Budgeting","Financial Statements","Revenue & Expense Tracking"],
+    },
+    "3rd Year": {
+      "Food Production III": ["International Cuisines","Garde Manger","Patisserie","Volume Catering","Menu Costing"],
+      "Food & Beverage Management": ["F&B Cost Control","Outlet Management","Purchasing & Storage","Menu Engineering","Staff Scheduling"],
+      "Hotel Marketing": ["Marketing Mix in Hospitality","Sales Strategies","Digital Marketing for Hotels","Brand Management","Guest Loyalty Programs"],
+      "Human Resource Management": ["Recruitment in Hospitality","Training Programs","Performance Management","Labour Laws Basics","Employee Welfare"],
+      "Financial Management": ["Capital Budgeting Basics","Working Capital","Cost Analysis","Financial Ratios","Investment Decisions"],
+      "Industrial Training": ["On-job Training","Department Rotation","Skill Application","Industry Exposure","Training Report"],
+    },
+    "4th Year": {
+      "Strategic Management": ["Strategy Formulation in Hospitality","Competitive Analysis","Strategic Planning Tools","Strategy Implementation","Performance Evaluation"],
+      "Facility Planning & Design": ["Hotel Layout Planning","Space Standards","Sustainable Design in Hotels","Equipment Planning","Renovation Planning"],
+      "Entrepreneurship in Hospitality": ["Business Plan for Hospitality Venture","Funding Options","Restaurant Startup Basics","Risk Assessment","Case Studies"],
+      "International Cuisine": ["French Cuisine","Italian Cuisine","Asian Cuisine","Middle Eastern Cuisine","Fusion Cuisine"],
+      "Research Methodology": ["Research Design in Hospitality","Data Collection Methods","Industry Analysis","Report Writing","Presentation Skills"],
+      "Project Work": ["Topic Selection","Industry Study","Data Analysis","Recommendations","Final Presentation"],
+    },
+  },
+};
+
+// Helper: get topics for a course, year and subject. Returns empty array if not found.
+export function getTopics(courseName, year, subjectName) {
+  return TOPICS[courseName]?.[year]?.[subjectName] || [];
+}
+
+// Helper: get all topics for every subject in a course+year, flattened with subject labels
+export function getAllTopicsForCourse(courseName, year) {
+  const yearData = TOPICS[courseName]?.[year];
+  if (!yearData) return [];
+  const result = [];
+  Object.entries(yearData).forEach(([subject, topics]) => {
+    topics.forEach(topic => result.push({ subject, topic }));
+  });
+  return result;
+}

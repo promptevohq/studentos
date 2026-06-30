@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { COURSE_CATEGORIES, COURSES, getCourseNames, getCourseYears, getCourseSubjects } from "./courseData.js";
+import { COURSE_CATEGORIES, COURSES, getCourseNames, getCourseYears, getCourseSubjects, getAllTopicsForCourse } from "./courseData.js";
 
 const supabase = createClient(
   "https://mwzpfrroagrhuenpdclt.supabase.co",
@@ -471,7 +471,7 @@ const BHMS_TOPICS = {
 };
 
 function StudyGuide({subjects,exams,userId}) {
-  const [selSubject,setSelSubject]=useState(Object.keys(BHMS_TOPICS)[0]);
+  const [selSubject,setSelSubject]=useState("");
   const [topics,setTopics]=useState({});
   const [loading,setLoading]=useState(true);
   const [editingId,setEditingId]=useState(null);
@@ -493,8 +493,7 @@ function StudyGuide({subjects,exams,userId}) {
         grouped[t.subject].push(t);
       });
       setTopics(grouped);
-    } else {
-      await seedDefaults();
+      setSelSubject(prev=>prev||Object.keys(grouped)[0]||"");
     }
     setLoading(false);
   }
@@ -509,6 +508,7 @@ function StudyGuide({subjects,exams,userId}) {
       const grouped={};
       data.forEach(t=>{if(!grouped[t.subject])grouped[t.subject]=[];grouped[t.subject].push(t);});
       setTopics(grouped);
+      setSelSubject(prev=>prev||Object.keys(grouped)[0]||"");
     }
   }
 
@@ -555,8 +555,17 @@ function StudyGuide({subjects,exams,userId}) {
       </div>
 
       {tab==="topics"&&<>
+        {Object.keys(topics).length===0?(
+          <Card style={{textAlign:"center",padding:48}}>
+            <div style={{fontSize:32,marginBottom:12}}>📖</div>
+            <div style={{fontSize:14,fontWeight:600,marginBottom:6}}>No study topics yet</div>
+            <div style={{color:C.muted,fontSize:13,marginBottom:16}}>Add topics manually to start tracking your study progress.</div>
+            <Btn onClick={()=>{setSelSubject(subjects?.[0]?.name||"");setShowAdd(true);}}>+ Add Topic</Btn>
+          </Card>
+        ):(
+        <>
         <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
-          {Object.keys(BHMS_TOPICS).map(sub=>{
+          {Object.keys(topics).map(sub=>{
             const t=topics[sub]||[];
             const d=t.filter(tp=>tp.done).length;
             return <button key={sub} onClick={()=>setSelSubject(sub)} style={{background:selSubject===sub?C.accent:C.card,border:`1px solid ${selSubject===sub?C.accent:C.border}`,color:selSubject===sub?"#000":C.muted,fontSize:11,fontWeight:600,padding:"6px 12px",borderRadius:8,cursor:"pointer",fontFamily:F}}>
@@ -603,6 +612,8 @@ function StudyGuide({subjects,exams,userId}) {
             ))}
           </div>
         </Card>
+        </>
+        )}
       </>}
 
       {tab==="planner"&&<>
@@ -610,7 +621,7 @@ function StudyGuide({subjects,exams,userId}) {
         :<div style={{display:"flex",flexDirection:"column",gap:12}}>
           {upcomingExams.slice(0,5).map(e=>{
             const d=daysLeft(e.date);
-            const subKey=Object.keys(BHMS_TOPICS).find(k=>e.subject.toLowerCase().includes(k.toLowerCase()))||null;
+            const subKey=Object.keys(topics).find(k=>e.subject.toLowerCase().includes(k.toLowerCase())||k.toLowerCase().includes(e.subject.toLowerCase()))||null;
             const subTopics=subKey?(topics[subKey]||[]):[];
             const pending=subTopics.filter(t=>!t.done);
             const hoursPerDay=pending.length>0&&d>0?Math.ceil((pending.length*0.5)/d):0;
@@ -1968,6 +1979,16 @@ function Onboarding({userId, onComplete}) {
           color: colors[i % colors.length],
         }));
       if (rows.length > 0) await supabase.from("subjects").insert(rows);
+    }
+    // Auto-add study topics if available for this course+year
+    const topicRows = getAllTopicsForCourse(course, year);
+    if (topicRows.length > 0) {
+      const {data: existingTopics} = await supabase.from("study_topics").select("subject,topic").eq("user_id", userId);
+      const existingKeys = (existingTopics || []).map(t => `${t.subject}::${t.topic}`.toLowerCase());
+      const newTopicRows = topicRows
+        .filter(t => !existingKeys.includes(`${t.subject}::${t.topic}`.toLowerCase()))
+        .map(t => ({ user_id: userId, subject: t.subject, topic: t.topic, done: false }));
+      if (newTopicRows.length > 0) await supabase.from("study_topics").insert(newTopicRows);
     }
     setSaving(false);
     onComplete();
